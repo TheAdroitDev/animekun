@@ -1,7 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Sun01Icon,
+  Moon02Icon,
+  Menu01Icon,
+  Cancel01Icon,
+} from "@hugeicons/core-free-icons";
 
 const navLinks = [
   { label: "World", href: "/" },
@@ -13,115 +21,165 @@ const navLinks = [
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Sync theme state on mount
+  useEffect(() => {
+    const current = document.documentElement.getAttribute("data-theme");
+    setIsDark(current === "dark");
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    const next = isDark ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+    setIsDark(!isDark);
+  }, [isDark]);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [mobileOpen]);
 
   return (
     <>
       <nav
-        className={`navbar ${scrolled ? "navbar--scrolled" : ""}`}
+        className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className="navbar__inner">
+        <div className="navbar-inner">
           {/* ── Logo ── */}
-          <Link href="/" className="navbar__logo" aria-label="AnimeKun Home">
-            <div className="navbar__logo-icon">
-              <span className="navbar__logo-letter">A</span>
-            </div>
-            <span className="navbar__logo-text">
-              Anime<span className="navbar__logo-text--accent">Kun</span>
-            </span>
+          <Link href="/" className="navbar-logo" aria-label="AnimeKun Home">
+            <Image
+              src="/animekun-logo-dark.png"
+              alt="AnimeKun logo"
+              width={44}
+              height={44}
+              className="navbar-logo-img navbar-logo-img-dark"
+              priority
+              unoptimized
+            />
+            <Image
+              src="/animekun-logo-light.png"
+              alt="AnimeKun logo"
+              width={44}
+              height={44}
+              className="navbar-logo-img navbar-logo-img-light"
+              priority
+              unoptimized
+            />
           </Link>
 
           {/* ── Desktop Links ── */}
-          <ul className="navbar__links">
+          <ul className="navbar-links">
             {navLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="navbar__link">
-                  <span className="navbar__link-label">{link.label}</span>
-                  <span className="navbar__link-bar" aria-hidden="true" />
+                <Link href={link.href} className="navbar-link">
+                  <span className="navbar-link-label">{link.label}</span>
                 </Link>
               </li>
             ))}
           </ul>
 
-          {/* ── Desktop Login ── */}
-          <div className="navbar__actions">
-            <Link href="/auth" className="navbar__login-btn">
+          {/* ── Desktop Actions ── */}
+          <div className="navbar-actions">
+            <button
+              className="theme-toggle"
+              onClick={toggleTheme}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              title={isDark ? "Light mode" : "Dark mode"}
+            >
+              <HugeiconsIcon
+                icon={isDark ? Sun01Icon : Moon02Icon}
+                size={18}
+                strokeWidth={1.8}
+              />
+            </button>
+
+            <Link href="/auth" className="navbar-login-btn">
               Login
             </Link>
           </div>
 
           {/* ── Mobile Hamburger ── */}
           <button
-            className={`navbar__hamburger ${mobileOpen ? "navbar__hamburger--open" : ""}`}
+            className={`navbar-hamburger ${mobileOpen ? "navbar-hamburger-open" : ""}`}
             onClick={() => setMobileOpen((v) => !v)}
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
           >
-            <span className="navbar__hamburger-line" />
-            <span className="navbar__hamburger-line" />
-            <span className="navbar__hamburger-line" />
+            <HugeiconsIcon
+              icon={mobileOpen ? Cancel01Icon : Menu01Icon}
+              size={20}
+              strokeWidth={1.8}
+            />
           </button>
         </div>
       </nav>
 
       {/* ── Mobile Overlay ── */}
       <div
-        className={`navbar-overlay ${mobileOpen ? "navbar-overlay--visible" : ""}`}
+        className={`navbar-overlay ${mobileOpen ? "navbar-overlay-visible" : ""}`}
         onClick={() => setMobileOpen(false)}
         aria-hidden="true"
       />
 
       {/* ── Mobile Drawer ── */}
       <aside
-        className={`navbar-drawer ${mobileOpen ? "navbar-drawer--open" : ""}`}
+        className={`navbar-drawer ${mobileOpen ? "navbar-drawer-open" : ""}`}
         aria-label="Mobile navigation"
       >
-        <div className="navbar-drawer__header">
+        <div className="navbar-drawer-header">
           <Link
             href="/"
-            className="navbar__logo"
+            className="navbar-logo"
             onClick={() => setMobileOpen(false)}
             aria-label="AnimeKun Home"
           >
-            <div className="navbar__logo-icon">
-              <span className="navbar__logo-letter">A</span>
-            </div>
-            <span className="navbar__logo-text">
-              Anime<span className="navbar__logo-text--accent">Kun</span>
-            </span>
+            <Image
+              src="/animekun-logo-dark.png"
+              alt="AnimeKun logo"
+              width={36}
+              height={36}
+              className="navbar-logo-img navbar-logo-img-dark"
+              unoptimized
+            />
+            <Image
+              src="/animekun-logo-light.png"
+              alt="AnimeKun logo"
+              width={36}
+              height={36}
+              className="navbar-logo-img navbar-logo-img-light"
+              unoptimized
+            />
           </Link>
 
           <button
-            className="navbar-drawer__close"
+            className="navbar-drawer-close"
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <HugeiconsIcon icon={Cancel01Icon} size={18} strokeWidth={1.8} />
           </button>
         </div>
 
-        <ul className="navbar-drawer__links">
+        <ul className="navbar-drawer-links">
           {navLinks.map((link, i) => (
-            <li key={link.href} style={{ animationDelay: `${i * 60}ms` }}>
+            <li key={link.href} style={{ animationDelay: `${i * 50}ms` }}>
               <Link
                 href={link.href}
-                className="navbar-drawer__link"
+                className="navbar-drawer-link"
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
@@ -130,10 +188,32 @@ export default function Navbar() {
           ))}
         </ul>
 
-        <div className="navbar-drawer__footer">
+        <div className="navbar-drawer-footer">
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{
+              width: "100%",
+              justifyContent: "center",
+              gap: "8px",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <HugeiconsIcon
+              icon={isDark ? Sun01Icon : Moon02Icon}
+              size={18}
+              strokeWidth={1.8}
+            />
+            <span style={{ fontSize: "13px", fontWeight: 500 }}>
+              {isDark ? "Light mode" : "Dark mode"}
+            </span>
+          </button>
+
           <Link
             href="/auth"
-            className="navbar__login-btn navbar__login-btn--full"
+            className="navbar-login-btn navbar-login-btn-full"
             onClick={() => setMobileOpen(false)}
           >
             Login

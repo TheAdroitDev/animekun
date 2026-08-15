@@ -39,3 +39,4 @@ Followups.md
 # typescript
 *.tsbuildinfo
 
+/followups.md

@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AnimeKun — Discover, Organize & Experience Anime",
+  title: "AnimeKun | Discover, Organize & Experience Anime",
   description:
     "AnimeKun is a modern anime platform combining discovery, AI recommendations, quizzes, and personalization into one experience.",
 };

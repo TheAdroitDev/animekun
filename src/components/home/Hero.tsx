@@ -67,7 +67,7 @@ export default function Hero() {
         <div className="hero-badge-wrapper">
           <div className="hero-badge">
             <HugeiconsIcon icon={SparklesIcon} size={14} strokeWidth={1.8} />
-            <span>Next-Gen AI Anime Platform</span>
+            <span>Don't worry guys I am working on it will be done soon very 😃</span>
           </div>
         </div>
 

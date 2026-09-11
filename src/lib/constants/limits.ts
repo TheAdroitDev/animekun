@@ -1,4 +1,4 @@
-export const limit = {
+export const LIMITS = {
     FREE: {
         AI_REQUESTS_PER_DAY: 5,
         BOOKMARK_BOARDS: 3

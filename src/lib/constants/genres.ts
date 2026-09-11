@@ -1,0 +1,25 @@
+export const GENRES = [
+    { name: "Action", slug: "action" },
+    { name: "Adventure", slug: "adventure" },
+    { name: "Comedy", slug: "comedy" },
+    { name: "Drama", slug: "drama" },
+    { name: "Fantasy", slug: "fantasy" },
+    { name: "Horror", slug: "horror" },
+    { name: "Mystery", slug: "mystery" },
+    { name: "Romance", slug: "romance" },
+    { name: "Sci-Fi", slug: "sci-fi" },
+    { name: "Slice of Life", slug: "slice-of-life" },
+    { name: "Sports", slug: "sports" },
+    { name: "Supernatural", slug: "supernatural" },
+    { name: "Thriller", slug: "thriller" },
+    { name: "Psychological", slug: "psychological" },
+    { name: "Crime", slug: "crime" },
+    { name: "Historical", slug: "historical" },
+    { name: "Isekai", slug: "isekai" },
+    { name: "Mecha", slug: "mecha" },
+    { name: "Music", slug: "music" },
+    { name: "Military", slug: "military" },
+    { name: "Martial Arts", slug: "martial-arts" },
+] as const;
+
+// will add more later;

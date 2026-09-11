@@ -1,8 +1,8 @@
-import React from 'react'
+"use client"
 
 const notFound = () => {
   return (
-    <div>404 Page Not Found</div>
+    <h1 className="text-center">Work in progress; It will be completed very soon ✌🏻</h1>
   )
 }
 

@@ -32,7 +32,7 @@ export interface SearchParams {
   query?: string;
   genre?: string;
   year?: number;
-  status?: string;
+  status?: "airing" | "complete" | "upcoming";
   page?: number;
   limit?: number;
 }

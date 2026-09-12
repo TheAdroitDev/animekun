@@ -30,7 +30,7 @@ export interface Character {
 
 export interface SearchParams {
   query?: string;
-  genre?: string;
+  genreIds?: number[];
   year?: number;
   status?: "airing" | "complete" | "upcoming";
   page?: number;

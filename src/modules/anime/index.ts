@@ -7,4 +7,5 @@ export type {
 } from "./types";
 
 export { AnimeCard } from "./components/AnimeCard";
+export { useTrending } from "./queries/use-trending";
 

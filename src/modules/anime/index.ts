@@ -5,3 +5,6 @@ export type {
     SearchParams,
     PaginatedResponse,
 } from "./types";
+
+export { AnimeCard } from "./components/AnimeCard";
+

@@ -1,5 +1,6 @@
 import {
     boolean,
+    index,
     pgEnum,
     pgTable,
     text,
@@ -45,6 +46,32 @@ export const users = pgTable("users", {
         .defaultNow()
         .notNull(),
 });
+
+// ai requests
+export const aiRequests = pgTable(
+    "ai_requests",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        userId: uuid("user_id")
+            .notNull()
+            .references(() => users.id, {
+                onDelete: "cascade",
+            }),
+        endpoint: text("endpoint").notNull(),
+        createdAt: timestamp("created_at", {
+            withTimezone: true,
+        })
+            .defaultNow()
+            .notNull(),
+    },
+    (table) => [
+        index("ai_requests_user_endpoint_created_idx").on(
+            table.userId,
+            table.endpoint,
+            table.createdAt,
+        ),
+    ],
+);
 
 // OAuth / Authentication Accounts
 
@@ -126,3 +153,4 @@ export const userPreferences = pgTable("user_preferences", {
         .defaultNow()
         .notNull(),
 });
+

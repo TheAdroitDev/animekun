@@ -12,6 +12,10 @@ import type {
     SearchParams,
 } from "./types";
 
+import { MemoryCache } from "./cache";
+
+// Tenrai API response types
+
 interface TenraiPagination {
     current_page: number;
     has_next_page: boolean;
@@ -26,23 +30,27 @@ interface TenraiPagination {
 interface TenraiAnimeEntry {
     mal_id: number;
     url: string;
+
     images?: {
         jpg?: {
             image_url?: string;
             small_image_url?: string;
             large_image_url?: string;
         };
+
         webp?: {
             image_url?: string;
             small_image_url?: string;
             large_image_url?: string;
         };
     };
+
     trailer?: {
         url?: string | null;
         youtube_id?: string | null;
         embed_url?: string | null;
     } | null;
+
     approved?: boolean;
 
     titles?: Array<{
@@ -136,16 +144,19 @@ interface TenraiCharacterEntry {
     character?: {
         mal_id: number;
         url: string;
+
         images?: {
             jpg?: {
                 image_url?: string;
                 small_image_url?: string;
             };
+
             webp?: {
                 image_url?: string;
                 small_image_url?: string;
             };
         };
+
         name: string;
     };
 
@@ -156,8 +167,11 @@ interface TenraiCharactersResponse {
     data: TenraiCharacterEntry[];
 }
 
+// Provider
+
 export class TenraiProvider implements AnimeProvider {
     private readonly client: AxiosInstance;
+    private readonly cache: MemoryCache;
 
     constructor() {
         this.client = axios.create({
@@ -167,32 +181,46 @@ export class TenraiProvider implements AnimeProvider {
                 Accept: "application/json",
             },
         });
+
+        this.cache = new MemoryCache();
     }
 
-    async search(params: SearchParams,): Promise<PaginatedResponse<Anime>> {
+    // Search
+
+    async search(
+        params: SearchParams,
+    ): Promise<PaginatedResponse<Anime>> {
         try {
-            const response = await this.client.get<TenraiAnimeListResponse>("/anime",
-                {
-                    params: {
-                        q: params.query,
-                        genres: params.genreIds?.join(","),
-                        year: params.year,
-                        status: params.status,
-                        page: params.page ?? 1,
-                        limit: Math.min(params.limit ?? 25, 50),
-                        sfw: true,
+            const response =
+                await this.client.get<TenraiAnimeListResponse>(
+                    "/anime",
+                    {
+                        params: {
+                            q: params.query,
+                            genres: params.genreIds?.join(","),
+                            year: params.year,
+                            status: params.status,
+                            page: params.page ?? 1,
+                            limit: Math.min(params.limit ?? 25, 50),
+                            sfw: true,
+                        },
                     },
-                },
-            );
+                );
 
             return {
-                data: response.data.data.map((anime) => this.mapAnime(anime)),
+                data: response.data.data.map(
+                    (anime) => this.mapAnime(anime),
+                ),
+
                 page:
                     response.data.pagination.current_page,
+
                 limit:
                     response.data.pagination.items.per_page,
+
                 total:
                     response.data.pagination.items.total,
+
                 hasNextPage:
                     response.data.pagination.has_next_page,
             };
@@ -204,7 +232,21 @@ export class TenraiProvider implements AnimeProvider {
         }
     }
 
+    // Trending
+
     async getTrending(): Promise<Anime[]> {
+        const cacheKey = "anime:trending";
+
+        const cached =
+            this.cache.get<Anime[]>(cacheKey);
+
+        if (cached) {
+            console.log("CACHE HIT:", cacheKey);
+            return cached;
+        }
+
+        console.log("CACHE MISS:", cacheKey);
+
         try {
             const response =
                 await this.client.get<TenraiAnimeListResponse>(
@@ -218,9 +260,17 @@ export class TenraiProvider implements AnimeProvider {
                     },
                 );
 
-            return response.data.data.map((anime) =>
-                this.mapAnime(anime),
+            const anime = response.data.data.map(
+                (item) => this.mapAnime(item),
             );
+
+            this.cache.set(
+                cacheKey,
+                anime,
+                30 * 60 * 1000,
+            );
+
+            return anime;
         } catch (error) {
             throw this.normalizeError(
                 error,
@@ -229,7 +279,21 @@ export class TenraiProvider implements AnimeProvider {
         }
     }
 
+    // Popular
+
     async getPopular(): Promise<Anime[]> {
+        const cacheKey = "anime:popular";
+
+        const cached =
+            this.cache.get<Anime[]>(cacheKey);
+
+        if (cached) {
+            console.log("CACHE HIT:", cacheKey);
+            return cached;
+        }
+
+        console.log("CACHE MISS:", cacheKey);
+
         try {
             const response =
                 await this.client.get<TenraiAnimeListResponse>(
@@ -243,9 +307,17 @@ export class TenraiProvider implements AnimeProvider {
                     },
                 );
 
-            return response.data.data.map((anime) =>
-                this.mapAnime(anime),
+            const anime = response.data.data.map(
+                (item) => this.mapAnime(item),
             );
+
+            this.cache.set(
+                cacheKey,
+                anime,
+                30 * 60 * 1000,
+            );
+
+            return anime;
         } catch (error) {
             throw this.normalizeError(
                 error,
@@ -254,10 +326,25 @@ export class TenraiProvider implements AnimeProvider {
         }
     }
 
+    // Seasonal
+
     async getSeasonal(
         season: string,
         year: number,
     ): Promise<Anime[]> {
+        const cacheKey =
+            `anime:seasonal:${year}:${season}`;
+
+        const cached =
+            this.cache.get<Anime[]>(cacheKey);
+
+        if (cached) {
+            console.log("CACHE HIT:", cacheKey);
+            return cached;
+        }
+
+        console.log("CACHE MISS:", cacheKey);
+
         try {
             const response =
                 await this.client.get<TenraiAnimeListResponse>(
@@ -270,9 +357,17 @@ export class TenraiProvider implements AnimeProvider {
                     },
                 );
 
-            return response.data.data.map((anime) =>
-                this.mapAnime(anime),
+            const anime = response.data.data.map(
+                (item) => this.mapAnime(item),
             );
+
+            this.cache.set(
+                cacheKey,
+                anime,
+                30 * 60 * 1000,
+            );
+
+            return anime;
         } catch (error) {
             throw this.normalizeError(
                 error,
@@ -281,21 +376,25 @@ export class TenraiProvider implements AnimeProvider {
         }
     }
 
+    // Anime detail
+
     async getAnimeById(
         id: string,
     ): Promise<AnimeDetail> {
         try {
             const response =
-    await this.client.get<TenraiAnimeResponse>(
-        `/anime/${id}/full`,
-        {
-            params: {
-                sfw: true,
-            },
-        },
-    );
+                await this.client.get<TenraiAnimeResponse>(
+                    `/anime/${id}/full`,
+                    {
+                        params: {
+                            sfw: true,
+                        },
+                    },
+                );
 
-return this.mapAnimeDetail(response.data.data);
+            return this.mapAnimeDetail(
+                response.data.data,
+            );
         } catch (error) {
             throw this.normalizeError(
                 error,
@@ -303,6 +402,8 @@ return this.mapAnimeDetail(response.data.data);
             );
         }
     }
+
+    // Characters
 
     async getCharacters(
         animeId: string,
@@ -321,13 +422,16 @@ return this.mapAnimeDetail(response.data.data);
                     id: String(
                         entry.character!.mal_id,
                     ),
+
                     name: entry.character!.name,
+
                     imageUrl:
                         entry.character!.images?.webp
                             ?.image_url ??
                         entry.character!.images?.jpg
                             ?.image_url ??
                         null,
+
                     role: entry.role ?? null,
                 }));
         } catch (error) {
@@ -338,11 +442,14 @@ return this.mapAnimeDetail(response.data.data);
         }
     }
 
+    // Mapping
+
     private mapAnime(
         anime: TenraiAnimeEntry,
     ): Anime {
         return {
             id: String(anime.mal_id),
+
             title:
                 anime.title_english ??
                 anime.title ??
@@ -350,8 +457,10 @@ return this.mapAnimeDetail(response.data.data);
                 "Unknown title",
 
             posterUrl:
-                anime.images?.webp?.large_image_url ??
-                anime.images?.jpg?.large_image_url ??
+                anime.images?.webp
+                    ?.large_image_url ??
+                anime.images?.jpg
+                    ?.large_image_url ??
                 anime.images?.webp?.image_url ??
                 anime.images?.jpg?.image_url ??
                 null,
@@ -404,6 +513,8 @@ return this.mapAnimeDetail(response.data.data);
         };
     }
 
+    // Error handling
+
     private normalizeError(
         error: unknown,
         fallbackMessage: string,
@@ -418,7 +529,10 @@ return this.mapAnimeDetail(response.data.data);
                     path?: string;
                 }>;
 
-            if (axiosError.code === "ECONNABORTED") {
+            if (
+                axiosError.code ===
+                "ECONNABORTED"
+            ) {
                 return new Error(
                     "Tenrai request timed out",
                 );

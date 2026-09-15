@@ -4,6 +4,9 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css";
 import Script from "next/script";
 import Navbar from "@/components/layout/Navbar";
+import { ThemeProvider } from "@/providers/theme-provider";
+import { QueryProvider } from "@/providers/query-provider";
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -47,10 +50,15 @@ export default function RootLayout({
           src="https://cloud.umami.is/script.js"
           data-website-id="0b1a8b08-63d1-42d8-a0f0-7d797044d5b6"
         />
-        <Navbar />
-        <main className="page-content">{children}</main>
-         <Analytics />
+        <ThemeProvider>
+          <QueryProvider>
+            <Navbar />
+            <main className="page-content">{children}</main>
+          </QueryProvider>
+        </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
 }
+

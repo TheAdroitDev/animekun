@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css";
 import Script from "next/script";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
@@ -54,6 +55,7 @@ export default function RootLayout({
           <QueryProvider>
             <Navbar />
             <main className="page-content">{children}</main>
+            <Footer />
           </QueryProvider>
         </ThemeProvider>
         <Analytics />

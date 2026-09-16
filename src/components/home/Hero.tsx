@@ -23,7 +23,7 @@ const samplePrompts = [
     "Top Seasonal 2026",
 ];
 
-const features = [
+/* const features = [
     {
         icon: AiMagicIcon,
         title: "AI Natural Discovery",
@@ -44,7 +44,7 @@ const features = [
         title: "Smart Recommendations",
         description: "Explore personalized recommendations tailored to your unique genre preferences.",
     },
-];
+]; */
 
 export default function Hero() {
     const [query, setQuery] = useState("");

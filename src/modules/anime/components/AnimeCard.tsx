@@ -1,6 +1,9 @@
-import Image from "next/image";
+import { Image as IKImage } from "@imagekit/next";
+import NextImage from "next/image";
 import Link from "next/link";
 
+import { getImageKitConfig } from "@/lib/config/imagekit";
+import { ROUTES } from "@/lib/constants/route";
 import type { Anime } from "@/modules/anime/types";
 
 interface AnimeCardProps {
@@ -8,18 +11,42 @@ interface AnimeCardProps {
 }
 
 export function AnimeCard({ anime }: AnimeCardProps) {
+    const { urlEndpoint } = getImageKitConfig();
+
     return (
-        <Link href={`/anime/${anime.id}`} className="anime-card">
+        <Link href={ROUTES.ANIME_DETAIL(anime.id)} className="anime-card">
             {/* Poster */}
             <div className="anime-card-poster">
                 {anime.posterUrl ? (
-                    <Image
-                        src={anime.posterUrl}
-                        alt={anime.title}
-                        fill
-                        sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 200px"
-                        className="anime-card-img"
-                    />
+                    urlEndpoint ? (
+                        <IKImage
+                            urlEndpoint={urlEndpoint}
+                            src={
+                                anime.posterUrl.startsWith("http")
+                                    ? `${urlEndpoint.replace(/\/$/, "")}/${anime.posterUrl}`
+                                    : anime.posterUrl
+                            }
+                            alt={anime.title}
+                            fill
+                            sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 200px"
+                            className="anime-card-img"
+                            transformation={[
+                                {
+                                    width: 300,
+                                    height: 450,
+                                    quality: 80,
+                                },
+                            ]}
+                        />
+                    ) : (
+                        <NextImage
+                            src={anime.posterUrl}
+                            alt={anime.title}
+                            fill
+                            sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 200px"
+                            className="anime-card-img"
+                        />
+                    )
                 ) : (
                     <div className="anime-card-no-img">
                         <span>No Image</span>

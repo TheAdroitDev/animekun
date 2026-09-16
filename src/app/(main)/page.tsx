@@ -1,5 +1,5 @@
 import Hero from "@/components/home/Hero";
-import { GenreQuickLinks, SectionHeader } from "@/components/shared";
+import { SectionHeader } from "@/components/shared";
 import {
     TrendingCarousel,
     PopularGrid,
@@ -9,10 +9,10 @@ import {
 export default function Home() {
     return (
         <div className="home-page">
-            {/* Hero Section */}
+            {/* Hero Section (includes search & quick genre badges) */}
             <Hero />
 
-            {/* Content Sections Container */}
+            {/* Content Sections */}
             <div className="home-sections">
                 {/* ── 1. Trending Now ── */}
                 <section className="home-section" aria-label="Trending anime">
@@ -42,16 +42,6 @@ export default function Home() {
                         viewAllHref="/search?sort=seasonal"
                     />
                     <SeasonalAnime />
-                </section>
-
-                {/* ── 4. Browse by Genre ── */}
-                <section className="home-section" aria-label="Browse by genre">
-                    <SectionHeader
-                        title="Browse by Genre"
-                        subtitle="Find anime tailored to your favorite styles"
-                        viewAllHref="/search"
-                    />
-                    <GenreQuickLinks />
                 </section>
             </div>
         </div>

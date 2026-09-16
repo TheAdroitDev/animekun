@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
                 protocol: "https",
                 hostname: "cdn.myanimelist.net",
             },
+            {
+                // ImageKit CDN for optimized anime images
+                protocol: "https",
+                hostname: "ik.imagekit.io",
+            },
         ],
     },
 };

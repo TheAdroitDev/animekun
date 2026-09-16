@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next"
-import "./globals.css";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import Script from "next/script";
+
+import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
+
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
+
 
 export const metadata: Metadata = {
   title: "AnimeKun | Discover, Organize & Experience Anime",
@@ -58,6 +62,7 @@ export default function RootLayout({
             <Footer />
           </QueryProvider>
         </ThemeProvider>
+         <SpeedInsights />
         <Analytics />
       </body>
     </html>

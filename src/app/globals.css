@@ -1073,3 +1073,63 @@ button {
     width: 140px;
   }
 }
+
+/* ───────────────────────────────────────────────
+   Anime Grid
+   ─────────────────────────────────────────────── */
+
+.anime-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.anime-grid-error {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  padding: 16px 0;
+}
+
+/* Popular Grid Section */
+.popular-grid-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.popular-grid-footer {
+  display: flex;
+  justify-content: center;
+}
+
+.popular-grid-view-all {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 8px 20px;
+  border: 1px solid var(--accent-subtle);
+  border-radius: 8px;
+  background: var(--accent-subtle);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.popular-grid-view-all:hover {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .anime-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .anime-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+}
+

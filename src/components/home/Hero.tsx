@@ -131,7 +131,7 @@ export default function Hero() {
                 <GenreQuickLinks />
 
         {/* ── Feature Cards Grid ── */}
-        <div className="hero-features-grid">
+        {/* <div className="hero-features-grid">
           {features.map((item) => (
             <div key={item.title} className="hero-feature-card">
               <div className="hero-feature-icon">
@@ -141,7 +141,7 @@ export default function Hero() {
               <p className="hero-feature-desc">{item.description}</p>
             </div>
           ))}
-        </div>
+        </div> */}
       </div>
     </section>
   );

@@ -14,6 +14,7 @@ import {
   Award01Icon,
   Compass01Icon,
 } from "@hugeicons/core-free-icons";
+import { GenreQuickLinks } from "../shared";
 
 const samplePrompts = [
   "Anime like Attack on Titan",
@@ -127,6 +128,7 @@ export default function Hero() {
             ))}
           </div>
         </div>
+                <GenreQuickLinks />
 
         {/* ── Feature Cards Grid ── */}
         <div className="hero-features-grid">

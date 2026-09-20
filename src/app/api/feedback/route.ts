@@ -2,9 +2,20 @@ import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { feedback } from "@/db/schema";
 import { ApiResponse } from "@/lib/utils/api-response";
+import { getEnv } from "@/lib/config/env";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const { DATABASE_URL } = getEnv();
+    if (!DATABASE_URL) {
+      return ApiResponse.error(
+        "Database is not configured. Please set DATABASE_URL in environment variables.",
+        503
+      );
+    }
+
     const body = await req.json();
     const { speedVote, featureVote, comment } = body;
 
@@ -21,8 +32,14 @@ export async function POST(req: NextRequest) {
       .insert(feedback)
       .values({
         speedVote,
-        featureVote: typeof featureVote === "string" && featureVote.trim() ? featureVote.trim().slice(0, 100) : null,
-        comment: typeof comment === "string" && comment.trim() ? comment.trim().slice(0, 500) : null,
+        featureVote:
+          typeof featureVote === "string" && featureVote.trim()
+            ? featureVote.trim().slice(0, 100)
+            : null,
+        comment:
+          typeof comment === "string" && comment.trim()
+            ? comment.trim().slice(0, 500)
+            : null,
       })
       .returning();
 

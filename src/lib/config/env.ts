@@ -4,6 +4,7 @@ const clientEnvSchema = z.object({
   NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT: z
     .string()
     .url("NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT must be a valid URL")
+    .or(z.literal(""))
     .optional()
     .default(""),
 });
@@ -17,15 +18,18 @@ const serverEnvSchema = clientEnvSchema.extend({
 
   DATABASE_URL: z
     .string()
-    .min(1, "DATABASE_URL is required"),
+    .optional()
+    .default(""),
 
   BETTER_AUTH_SECRET: z
     .string()
-    .min(1, "BETTER_AUTH_SECRET is required"),
+    .optional()
+    .default(""),
 
   AI_API_KEY: z
     .string()
-    .min(1, "AI_API_KEY is required"),
+    .optional()
+    .default(""),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -38,8 +42,11 @@ function createEnv(env: NodeJS.ProcessEnv): ServerEnv {
     });
 
     if (!parsedClient.success) {
-      console.error(parsedClient.error.message);
-      throw new Error("Invalid client environment variables");
+      const formatted = parsedClient.error.issues
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join(", ");
+      console.error("Invalid client environment variables:", formatted);
+      throw new Error(`Invalid client environment variables: ${formatted}`);
     }
 
     return parsedClient.data as ServerEnv;
@@ -48,8 +55,11 @@ function createEnv(env: NodeJS.ProcessEnv): ServerEnv {
   const safeParseResult = serverEnvSchema.safeParse(env);
 
   if (!safeParseResult.success) {
-    console.error(safeParseResult.error.message);
-    throw new Error("Invalid environment variables");
+    const formatted = safeParseResult.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join(", ");
+    console.error("Invalid environment variables:", formatted);
+    throw new Error(`Invalid environment variables: ${formatted}`);
   }
 
   return safeParseResult.data;

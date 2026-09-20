@@ -7,6 +7,7 @@ import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { FeedbackWidget } from "@/components/feedback";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
@@ -60,6 +61,7 @@ export default function RootLayout({
             <Navbar />
             <main className="page-content">{children}</main>
             <Footer />
+            <FeedbackWidget />
           </QueryProvider>
         </ThemeProvider>
          <SpeedInsights />

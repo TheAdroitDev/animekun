@@ -68,7 +68,7 @@ export default function Hero() {
                 <div className="hero-badge-wrapper">
                     <div className="hero-badge">
                         <HugeiconsIcon icon={SparklesIcon} size={14} strokeWidth={1.8} />
-                        <span>Backend work is done; Now making frontend just some more time guys😃</span>
+                        <span>Use it guys and give me feedback; more work in progress😃</span>
                     </div>
                 </div>
 

@@ -1503,6 +1503,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 48px;
   padding: 10px 18px;
   background-color: var(--bg-elevated);
   color: var(--text-primary);
@@ -1511,6 +1512,7 @@ button {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
   box-shadow: var(--shadow-md);
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   backdrop-filter: blur(8px);
@@ -1721,5 +1723,25 @@ button {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .feedback-widget-container {
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .feedback-popover {
+    width: min(360px, calc(100vw - 32px));
+    max-height: calc(100dvh - 96px - env(safe-area-inset-bottom));
+    padding: 16px;
+  }
+
+  .feedback-option-btn,
+  .feedback-submit-btn,
+  .feedback-close-btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
 }
 

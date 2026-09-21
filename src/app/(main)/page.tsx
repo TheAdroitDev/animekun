@@ -1,4 +1,7 @@
 import Hero from "@/components/home/Hero";
+import GenerateSection from "@/components/home/GenerateSection";
+import QuizSection from "@/components/home/QuizSection";
+import TownHallSection from "@/components/home/TownHallSection";
 import { SectionHeader } from "@/components/shared";
 import {
     TrendingCarousel,
@@ -9,12 +12,10 @@ import {
 export default function Home() {
     return (
         <div className="home-page">
-            {/* Hero Section (includes search & quick genre badges) */}
             <Hero />
-
-            {/* Content Sections */}
+            <GenerateSection />
+            <QuizSection />
             <div className="home-sections">
-                {/* ── 1. Trending Now ── */}
                 <section className="home-section" aria-label="Trending anime">
                     <SectionHeader
                         title="Trending Now"
@@ -24,7 +25,6 @@ export default function Home() {
                     <TrendingCarousel />
                 </section>
 
-                {/* ── 2. All-Time Popular ── */}
                 <section className="home-section" aria-label="Popular anime">
                     <SectionHeader
                         title="All-Time Popular"
@@ -34,7 +34,6 @@ export default function Home() {
                     <PopularGrid />
                 </section>
 
-                {/* ── 3. Seasonal Anime ── */}
                 <section className="home-section" aria-label="Seasonal anime">
                     <SectionHeader
                         title="Seasonal Anime"
@@ -44,6 +43,7 @@ export default function Home() {
                     <SeasonalAnime />
                 </section>
             </div>
+            <TownHallSection />
         </div>
     );
 }

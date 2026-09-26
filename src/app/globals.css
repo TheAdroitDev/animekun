@@ -1980,6 +1980,59 @@ button {
 }
 
 /* Header */
+.detail-banner-wrap {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.detail-banner-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.detail-banner-bg-img {
+  object-fit: cover;
+  filter: blur(28px) brightness(0.3) saturate(1.3);
+}
+
+[data-theme="light"] .detail-banner-bg-img {
+  filter: blur(28px) brightness(0.6) saturate(1.2);
+}
+
+.detail-banner-wrap .detail-header {
+  position: relative;
+  z-index: 1;
+  padding: 32px;
+}
+
+/* Force crisp white text inside banner (dark blurred bg) */
+.detail-banner-wrap .detail-title,
+.detail-banner-wrap .detail-info-row-value,
+.detail-banner-wrap .detail-genre-pill {
+  color: #FFFFFF;
+}
+
+.detail-banner-wrap .detail-info-row-label,
+.detail-banner-wrap .detail-score-badge,
+.detail-banner-wrap .detail-meta-tag,
+.detail-banner-wrap .detail-status-badge {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #EDEDF2;
+}
+
+.detail-banner-wrap .detail-score-badge {
+  color: var(--accent-readable);
+}
+
+.detail-banner-wrap .detail-genre-pill {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
 .detail-header {
   display: flex;
   gap: 32px;
@@ -2272,6 +2325,10 @@ button {
 
   .detail-characters-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-banner-wrap .detail-header {
+    padding: 20px;
   }
 }
 

@@ -8,6 +8,7 @@ import { animeProvider } from "@/services/anime-provider";
 import { getImageKitConfig } from "@/lib/config/imagekit";
 import { ROUTES } from "@/lib/constants/route";
 import { AnimeDetailHeader } from "@/modules/anime/components/AnimeDetailHeader";
+import { AnimeSynopsis } from "@/modules/anime/components/AnimeSynopsis";
 import type { AnimeDetail, Character } from "@/modules/anime";
 
 /**
@@ -119,28 +120,11 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
                     airedTo={airedTo}
                 />
 
-                {/* ── Synopsis ── */}
-                {anime.synopsis && (
-                    <div className="detail-block">
-                        <h2 className="detail-block-heading">Synopsis</h2>
-                        <p className="detail-synopsis">{anime.synopsis}</p>
-                    </div>
-                )}
-
-                {/* ── Info Grid ── */}
-                {infoItems.length > 0 && (
-                    <div className="detail-block">
-                        <h2 className="detail-block-heading">Information</h2>
-                        <div className="detail-info-grid">
-                            {infoItems.map((item) => (
-                                <div key={item.label} className="detail-info-cell">
-                                    <span className="detail-info-cell-label">{item.label}</span>
-                                    <span className="detail-info-cell-value">{item.value}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* ── Synopsis + Info Grid ── */}
+                <AnimeSynopsis
+                    synopsis={anime.synopsis}
+                    infoItems={infoItems}
+                />
 
                 {/* ── Characters ── */}
                 {characters.length > 0 && (

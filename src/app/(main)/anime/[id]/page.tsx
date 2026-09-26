@@ -7,6 +7,7 @@ import Link from "next/link";
 import { animeProvider } from "@/services/anime-provider";
 import { getImageKitConfig } from "@/lib/config/imagekit";
 import { ROUTES } from "@/lib/constants/route";
+import { AnimeDetailHeader } from "@/modules/anime/components/AnimeDetailHeader";
 import type { AnimeDetail, Character } from "@/modules/anime";
 
 /**
@@ -110,65 +111,13 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
                     <span className="detail-breadcrumb-current">{anime.title}</span>
                 </nav>
 
-                {/* ── Header: Poster + Core Info ── */}
-                <div className="detail-header">
-                    <div className="detail-poster">
-                        {poster ? (
-                            <Image
-                                src={poster}
-                                alt={anime.title}
-                                width={260}
-                                height={390}
-                                className="detail-poster-img"
-                                priority
-                                unoptimized
-                            />
-                        ) : (
-                            <div className="detail-poster-placeholder">No Image</div>
-                        )}
-                    </div>
-
-                    <div className="detail-header-info">
-                        <h1 className="detail-title">{anime.title}</h1>
-
-                        <div className="detail-meta-line">
-                            {anime.score !== null && (
-                                <span className="detail-score-badge">★ {anime.score.toFixed(2)}</span>
-                            )}
-                            {anime.type && <span className="detail-meta-tag">{anime.type}</span>}
-                            {anime.episodes !== null && (
-                                <span className="detail-meta-tag">{anime.episodes} eps</span>
-                            )}
-                            {anime.status && (
-                                <span className="detail-status-badge">{anime.status}</span>
-                            )}
-                        </div>
-
-                        {anime.genres.length > 0 && (
-                            <div className="detail-genres">
-                                {anime.genres.map((g) => (
-                                    <span key={g} className="detail-genre-pill">{g}</span>
-                                ))}
-                            </div>
-                        )}
-
-                        {anime.studios.length > 0 && (
-                            <p className="detail-info-row">
-                                <span className="detail-info-row-label">Studio</span>
-                                <span className="detail-info-row-value">{anime.studios.join(", ")}</span>
-                            </p>
-                        )}
-
-                        {airedFrom && (
-                            <p className="detail-info-row">
-                                <span className="detail-info-row-label">Aired</span>
-                                <span className="detail-info-row-value">
-                                    {airedFrom}{airedTo ? ` — ${airedTo}` : ""}
-                                </span>
-                            </p>
-                        )}
-                    </div>
-                </div>
+                {/* ── Header: Banner + Poster + Core Info ── */}
+                <AnimeDetailHeader
+                    anime={anime}
+                    posterSrc={poster}
+                    airedFrom={airedFrom}
+                    airedTo={airedTo}
+                />
 
                 {/* ── Synopsis ── */}
                 {anime.synopsis && (

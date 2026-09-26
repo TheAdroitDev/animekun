@@ -7,6 +7,7 @@ export type {
 } from "./types";
 
 export { AnimeCard } from "./components/AnimeCard";
+export { AnimeDetailHeader } from "./components/AnimeDetailHeader";
 export { AnimeCardSkeleton } from "./components/AnimeCardSkeleton";
 export { AnimeGrid } from "./components/AnimeGrid";
 export { PopularGrid } from "./components/PopularGrid";

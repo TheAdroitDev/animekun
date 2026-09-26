@@ -29,8 +29,8 @@ export default function Hero() {
 
                 <p className="hero-subtitle">
                     No more endless MyAnimeList rabbit holes or guessing what to watch next.
-                    Filter by your exact vibe, test your trivia skills against the community,
-                    and track your watchlist with zero clutter.
+                    Filter by your exact vibe, test your otaku skills against the community,
+                    and track your watchlist.
                 </p>
 
                 <div className="hero-actions">

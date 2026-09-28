@@ -7,7 +7,6 @@ import { api } from "@/lib/api-client";
 interface FeedbackPayload {
     speedVote: string;
     featureVote?: string;
-    comment?: string;
 }
 
 const SPEED_OPTIONS = [
@@ -20,14 +19,12 @@ const FEATURE_OPTIONS = [
     { id: "ai_recommendations", label: "🤖 AI Recommendations" },
     { id: "watchlist_kanban", label: "📑 Watchlist & Kanban" },
     { id: "community_chat", label: "💬 Anime Community Chat" },
-    { id: "character_va", label: "🔍 Character & VA Details" },
 ];
 
 export function FeedbackWidget() {
     const [isOpen, setIsOpen] = useState(false);
     const [speedVote, setSpeedVote] = useState<string>("");
     const [featureVote, setFeatureVote] = useState<string>("");
-    const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -57,7 +54,6 @@ export function FeedbackWidget() {
             const payload: FeedbackPayload = {
                 speedVote,
                 featureVote: featureVote || undefined,
-                comment: comment.trim() || undefined,
             };
 
             await api.post("/feedback", payload);
@@ -80,7 +76,6 @@ export function FeedbackWidget() {
         setIsSubmitted(false);
         setSpeedVote("");
         setFeatureVote("");
-        setComment("");
         setErrorMessage(null);
     };
 
@@ -165,20 +160,6 @@ export function FeedbackWidget() {
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-
-                            {/* Optional Comment */}
-                            <div className="feedback-group">
-                                <label className="feedback-label">
-                                    Any suggestions or thoughts? <span className="text-[11px] font-normal text-muted">(Optional)</span>
-                                </label>
-                                <textarea
-                                    className="feedback-textarea"
-                                    placeholder="Tell us what you'd love to see..."
-                                    value={comment}
-                                    onChange={(e) => setComment(e.target.value)}
-                                    maxLength={500}
-                                />
                             </div>
 
                             {errorMessage && (

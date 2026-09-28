@@ -18,7 +18,7 @@ export default function Hero() {
                 <div className="hero-badge-wrapper">
                     <div className="hero-badge">
                         <HugeiconsIcon icon={SparklesIcon} size={14} strokeWidth={1.8} />
-                        <span>New: tap any anime to see everything about it. More coming soon 😉 </span>
+                        <span>Fixed: Feedback button is fixed. Please give me feedback guys😁</span>
                     </div>
                 </div>
 

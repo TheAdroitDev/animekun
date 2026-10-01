@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 
 import { ROUTES } from "@/lib/constants/route";
 import { GENRES } from "@/lib/constants/genres";
 import { AnimeGrid } from "@/modules/anime/components/AnimeGrid";
+import { SearchBar } from "@/modules/anime/components/SearchBar";
 
 interface SearchContentProps {
     initialQuery?: string;
@@ -20,30 +21,11 @@ export function SearchContent({
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const [query, setQuery] = useState(initialQuery);
     const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
     // Active filters from URL
     const activeQuery = searchParams.get("q") ?? initialQuery;
     const activeGenre = searchParams.get("genre") ?? initialGenre;
-
-    const handleSearchSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const params = new URLSearchParams(searchParams.toString());
-        if (query.trim()) {
-            params.set("q", query.trim());
-        } else {
-            params.delete("q");
-        }
-        router.push(`${ROUTES.SEARCH}?${params.toString()}`);
-    };
-
-    const handleClearSearch = () => {
-        setQuery("");
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("q");
-        router.push(`${ROUTES.SEARCH}?${params.toString()}`);
-    };
 
     return (
         <div className="search-page-layout">
@@ -56,31 +38,7 @@ export function SearchContent({
                     </p>
                 </div>
 
-                <form className="search-input-form" onSubmit={handleSearchSubmit}>
-                    <div className="search-input-wrapper">
-                        <Search size={18} className="search-input-icon" />
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search anime by title, studio, or keyword..."
-                            className="search-input-field"
-                        />
-                        {query && (
-                            <button
-                                type="button"
-                                onClick={handleClearSearch}
-                                className="search-clear-btn"
-                                aria-label="Clear search"
-                            >
-                                <X size={16} />
-                            </button>
-                        )}
-                    </div>
-                    <button type="submit" className="search-submit-btn">
-                        Search
-                    </button>
-                </form>
+                <SearchBar defaultValue={initialQuery} />
 
                 {/* Mobile Filter Toggle */}
                 <div className="search-mobile-filter-bar">

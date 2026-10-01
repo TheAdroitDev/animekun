@@ -2297,6 +2297,13 @@ button {
   color: var(--text-secondary);
 }
 
+/* Recommendations */
+.detail-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
 /* Loading skeleton */
 .detail-skeleton {
   display: block;

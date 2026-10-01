@@ -13,6 +13,7 @@ export { AnimeCardSkeleton } from "./components/AnimeCardSkeleton";
 export { AnimeGrid } from "./components/AnimeGrid";
 export { CharacterGrid } from "./components/CharacterGrid";
 export { PopularGrid } from "./components/PopularGrid";
+export { RelatedAnime } from "./components/RelatedAnime";
 export { SeasonalAnime } from "./components/SeasonalAnime";
 export { TrendingCarousel } from "./components/TrendingCarousel";
 export { useTrending } from "./queries/use-trending";

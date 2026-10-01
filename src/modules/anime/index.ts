@@ -15,6 +15,7 @@ export { BookmarkButton } from "./components/BookmarkButton";
 export { CharacterGrid } from "./components/CharacterGrid";
 export { PopularGrid } from "./components/PopularGrid";
 export { RelatedAnime } from "./components/RelatedAnime";
+export { SearchBar } from "./components/SearchBar";
 export { SeasonalAnime } from "./components/SeasonalAnime";
 export { TrendingCarousel } from "./components/TrendingCarousel";
 export { useTrending } from "./queries/use-trending";

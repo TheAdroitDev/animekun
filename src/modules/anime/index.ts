@@ -11,6 +11,7 @@ export { AnimeDetailHeader } from "./components/AnimeDetailHeader";
 export { AnimeSynopsis } from "./components/AnimeSynopsis";
 export { AnimeCardSkeleton } from "./components/AnimeCardSkeleton";
 export { AnimeGrid } from "./components/AnimeGrid";
+export { BookmarkButton } from "./components/BookmarkButton";
 export { CharacterGrid } from "./components/CharacterGrid";
 export { PopularGrid } from "./components/PopularGrid";
 export { RelatedAnime } from "./components/RelatedAnime";

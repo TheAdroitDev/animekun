@@ -129,6 +129,17 @@ interface TenraiAnimeEntry {
         name: string;
         url: string;
     }>;
+
+    relations?: Array<{
+        relation: string;
+        entry?: Array<{
+            mal_id: number;
+            type: string;
+            name: string;
+            url?: string;
+            images?: TenraiAnimeEntry["images"];
+        }>;
+    }>;
 }
 
 interface TenraiAnimeResponse {
@@ -165,6 +176,18 @@ interface TenraiCharacterEntry {
 
 interface TenraiCharactersResponse {
     data: TenraiCharacterEntry[];
+}
+
+interface TenraiRecommendationEntry {
+    entry: {
+        mal_id: number;
+        title: string;
+        images?: TenraiAnimeEntry["images"];
+    };
+}
+
+interface TenraiRecommendationsResponse {
+    data: TenraiRecommendationEntry[];
 }
 
 // Provider
@@ -442,6 +465,41 @@ export class TenraiProvider implements AnimeProvider {
         }
     }
 
+    // Recommendations
+
+    async getRecommendations(
+        animeId: string,
+    ): Promise<Anime[]> {
+        try {
+            const response =
+                await this.client.get<TenraiRecommendationsResponse>(
+                    `/anime/${animeId}/recommendations`,
+                );
+
+            return response.data.data
+                .slice(0, 12)
+                .map((rec) => ({
+                    id: String(rec.entry.mal_id),
+                    title: rec.entry.title,
+                    posterUrl:
+                        rec.entry.images?.webp
+                            ?.large_image_url ??
+                        rec.entry.images?.jpg
+                            ?.large_image_url ??
+                        null,
+                    score: null,
+                    genres: [],
+                    status: null,
+                    year: null,
+                }));
+        } catch (error) {
+            throw this.normalizeError(
+                error,
+                `Failed to fetch recommendations for anime ${animeId}`,
+            );
+        }
+    }
+
     // Mapping
 
     private mapAnime(
@@ -510,6 +568,28 @@ export class TenraiProvider implements AnimeProvider {
 
             airingTo:
                 anime.aired?.to ?? null,
+
+            relations: anime.relations
+                ? anime.relations
+                    .flatMap((r) =>
+                        (r.entry ?? [])
+                            .filter((e) => e.type === "anime")
+                            .map((e) => ({
+                                id: String(e.mal_id),
+                                title: e.name,
+                                posterUrl:
+                                    e.images?.webp?.large_image_url ??
+                                    e.images?.jpg?.large_image_url ??
+                                    e.images?.webp?.image_url ??
+                                    e.images?.jpg?.image_url ??
+                                    null,
+                                score: null,
+                                genres: r.relation ? [r.relation] : [],
+                                status: null,
+                                year: null,
+                            }))
+                    )
+                : [],
         };
     }
 

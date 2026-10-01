@@ -11,10 +11,12 @@ export { AnimeDetailHeader } from "./components/AnimeDetailHeader";
 export { AnimeSynopsis } from "./components/AnimeSynopsis";
 export { AnimeCardSkeleton } from "./components/AnimeCardSkeleton";
 export { AnimeGrid } from "./components/AnimeGrid";
+export { CharacterGrid } from "./components/CharacterGrid";
 export { PopularGrid } from "./components/PopularGrid";
 export { SeasonalAnime } from "./components/SeasonalAnime";
 export { TrendingCarousel } from "./components/TrendingCarousel";
 export { useTrending } from "./queries/use-trending";
 export { usePopular } from "./queries/use-popular";
+export { useCharacters } from "./queries/use-characters";
 export { useSeasonal, getCurrentSeason } from "./queries/use-seasonal";
 

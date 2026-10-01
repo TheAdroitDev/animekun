@@ -10,11 +10,11 @@ import { AnimeDetailHeader } from "@/modules/anime/components/AnimeDetailHeader"
 import { AnimeSynopsis } from "@/modules/anime/components/AnimeSynopsis";
 import { CharacterGrid } from "@/modules/anime/components/CharacterGrid";
 import { RelatedAnime } from "@/modules/anime/components/RelatedAnime";
-import type { Anime, AnimeDetail, Character } from "@/modules/anime";
+import type { Anime, Character } from "@/modules/anime";
 
 
- //  React cache() deduplicates getAnimeById between generateMetadata and the
-  // page render — single upstream API call per request, zero wasted fetches.
+//  React cache() deduplicates getAnimeById between generateMetadata and the
+// page render — single upstream API call per request, zero wasted fetches.
 
 const getAnimeDetail = cache((id: string) => animeProvider.getAnimeById(id));
 
@@ -28,24 +28,60 @@ export async function generateMetadata(
     { params }: AnimeDetailPageProps,
 ): Promise<Metadata> {
     const { id } = await params;
+    const { urlEndpoint } = getImageKitConfig();
 
     try {
         const anime = await getAnimeDetail(id);
-        const description =
-            anime.synopsis?.slice(0, 160) ??
-            `Discover ${anime.title} on AnimeKun — scores, characters, and more.`;
+        const cleanSynopsis = anime.synopsis
+            ? anime.synopsis.replace(/\s+/g, " ").trim().slice(0, 160)
+            : `Discover ${anime.title} on AnimeKun — scores, characters, and more.`;
+
+        const title = `${anime.title} | AnimeKun`;
+        const poster = resolveImage(anime.posterUrl, urlEndpoint);
 
         return {
-            title: `${anime.title} | AnimeKun`,
-            description,
+            title,
+            description: cleanSynopsis,
+            keywords: [
+                anime.title,
+                ...anime.genres,
+                ...anime.studios,
+                "anime",
+                "AnimeKun",
+                "recommendations",
+            ].filter(Boolean),
             openGraph: {
-                title: `${anime.title} | AnimeKun`,
-                description,
-                ...(anime.posterUrl && { images: [anime.posterUrl] }),
+                title,
+                description: cleanSynopsis,
+                url: ROUTES.ANIME_DETAIL(anime.id),
+                siteName: "AnimeKun",
+                type: "website",
+                ...(poster && {
+                    images: [
+                        {
+                            url: poster,
+                            width: 600,
+                            height: 900,
+                            alt: anime.title,
+                        },
+                    ],
+                }),
+            },
+            twitter: {
+                card: "summary_large_image",
+                title,
+                description: cleanSynopsis,
+                ...(poster && { images: [poster] }),
+            },
+            alternates: {
+                canonical: ROUTES.ANIME_DETAIL(anime.id),
             },
         };
     } catch {
-        return { title: "Anime Not Found | AnimeKun" };
+        return {
+            title: "Anime Not Found | AnimeKun",
+            description: "The requested anime could not be found on AnimeKun.",
+        };
     }
 }
 

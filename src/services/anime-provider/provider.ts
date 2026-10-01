@@ -22,4 +22,8 @@ export interface AnimeProvider {
     getCharacters(
         animeId: string,
     ): Promise<Character[]>;
+
+    getRecommendations(
+        animeId: string,
+    ): Promise<Anime[]>;
 }

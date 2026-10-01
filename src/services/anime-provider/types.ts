@@ -19,6 +19,7 @@ export interface AnimeDetail extends Anime {
   studios: string[];
   airingFrom: string | null;
   airingTo: string | null;
+  relations: Anime[];
 }
 
 export interface Character {

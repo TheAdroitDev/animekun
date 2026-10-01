@@ -14,7 +14,7 @@ import { ROUTES } from "@/lib/constants/route";
 
 const navLinks = [
     { label: "World", href: ROUTES.HOME },
-    { label: "Generate", href: ROUTES.DASHBOARD.GENERATE },
+    { label: "Search", href: ROUTES.SEARCH },
     { label: "Quiz", href: ROUTES.DASHBOARD.QUIZ },
     { label: "Town Hall", href: "#town-hall" },
     { label: "Bookmarks", href: ROUTES.DASHBOARD.BOOKMARKS },

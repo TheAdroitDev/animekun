@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import { BookmarkButton } from "./BookmarkButton";
 import type { AnimeDetail } from "@/modules/anime/types";
 
 interface AnimeDetailHeaderProps {
@@ -92,6 +93,14 @@ export function AnimeDetailHeader({
                             </span>
                         </p>
                     )}
+
+                    {/* Bookmark Action */}
+                    <div className="detail-header-actions">
+                        <BookmarkButton
+                            animeId={anime.id}
+                            animeTitle={anime.title}
+                        />
+                    </div>
                 </div>
             </div>
         </div>

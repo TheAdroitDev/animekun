@@ -21,4 +21,5 @@ export { useTrending } from "./queries/use-trending";
 export { usePopular } from "./queries/use-popular";
 export { useCharacters } from "./queries/use-characters";
 export { useSeasonal, getCurrentSeason } from "./queries/use-seasonal";
+export { useSearch } from "./queries/use-search";
 

@@ -9,7 +9,8 @@ import { ROUTES } from "@/lib/constants/route";
 import { AnimeDetailHeader } from "@/modules/anime/components/AnimeDetailHeader";
 import { AnimeSynopsis } from "@/modules/anime/components/AnimeSynopsis";
 import { CharacterGrid } from "@/modules/anime/components/CharacterGrid";
-import type { AnimeDetail, Character } from "@/modules/anime";
+import { RelatedAnime } from "@/modules/anime/components/RelatedAnime";
+import type { Anime, AnimeDetail, Character } from "@/modules/anime";
 
 
  //  React cache() deduplicates getAnimeById between generateMetadata and the
@@ -75,10 +76,11 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
     const { id } = await params;
     const { urlEndpoint } = getImageKitConfig();
 
-    // Anime is critical (404 if missing), characters are supplementary
-    const [anime, characters] = await Promise.all([
+    // Anime is critical (404 if missing); characters + recommendations are supplementary
+    const [anime, characters, recommendations] = await Promise.all([
         getAnimeDetail(id).catch(() => null),
         animeProvider.getCharacters(id).catch((): Character[] => []),
+        animeProvider.getRecommendations(id).catch((): Anime[] => []),
     ]);
 
     if (!anime) notFound();
@@ -128,6 +130,12 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
 
                 {/*  Characters  */}
                 <CharacterGrid characters={characters} />
+
+                {/* ── Related & Recommendations ── */}
+                <RelatedAnime
+                    related={anime.relations}
+                    recommendations={recommendations}
+                />
             </div>
         </section>
     );

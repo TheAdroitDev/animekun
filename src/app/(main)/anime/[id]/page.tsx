@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 
 import { animeProvider } from "@/services/anime-provider";
@@ -9,19 +8,20 @@ import { getImageKitConfig } from "@/lib/config/imagekit";
 import { ROUTES } from "@/lib/constants/route";
 import { AnimeDetailHeader } from "@/modules/anime/components/AnimeDetailHeader";
 import { AnimeSynopsis } from "@/modules/anime/components/AnimeSynopsis";
+import { CharacterGrid } from "@/modules/anime/components/CharacterGrid";
 import type { AnimeDetail, Character } from "@/modules/anime";
 
-/**
- * React cache() deduplicates getAnimeById between generateMetadata and the
- * page render — single upstream API call per request, zero wasted fetches.
- */
+
+ //  React cache() deduplicates getAnimeById between generateMetadata and the
+  // page render — single upstream API call per request, zero wasted fetches.
+
 const getAnimeDetail = cache((id: string) => animeProvider.getAnimeById(id));
 
 interface AnimeDetailPageProps {
     params: Promise<{ id: string }>;
 }
 
-// ── Dynamic SEO Metadata ────────────────────────────────────────────────────
+// Dynamic SEO Metadata 
 
 export async function generateMetadata(
     { params }: AnimeDetailPageProps,
@@ -48,7 +48,7 @@ export async function generateMetadata(
     }
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function resolveImage(url: string | null, endpoint: string): string | null {
     if (!url || !endpoint) return url;
@@ -69,7 +69,7 @@ function formatDate(iso: string | null): string | null {
     }
 }
 
-// ── Page (Server Component) ─────────────────────────────────────────────────
+//  Page (Server Component) 
 
 export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) {
     const { id } = await params;
@@ -103,7 +103,7 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
     return (
         <section className="detail-section">
             <div className="detail-container">
-                {/* ── Breadcrumb ── */}
+                {/*  Breadcrumb  */}
                 <nav className="detail-breadcrumb" aria-label="Breadcrumb">
                     <Link href={ROUTES.HOME} className="detail-breadcrumb-link">Home</Link>
                     <span className="detail-breadcrumb-sep">/</span>
@@ -112,7 +112,7 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
                     <span className="detail-breadcrumb-current">{anime.title}</span>
                 </nav>
 
-                {/* ── Header: Banner + Poster + Core Info ── */}
+                {/*  Header: Banner + Poster + Core Info  */}
                 <AnimeDetailHeader
                     anime={anime}
                     posterSrc={poster}
@@ -120,44 +120,14 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
                     airedTo={airedTo}
                 />
 
-                {/* ── Synopsis + Info Grid ── */}
+                {/*  Synopsis + Info Grid  */}
                 <AnimeSynopsis
                     synopsis={anime.synopsis}
                     infoItems={infoItems}
                 />
 
-                {/* ── Characters ── */}
-                {characters.length > 0 && (
-                    <div className="detail-block">
-                        <h2 className="detail-block-heading">Characters</h2>
-                        <div className="detail-characters-grid">
-                            {characters.slice(0, 12).map((c) => (
-                                <div key={c.id} className="detail-char-card">
-                                    <div className="detail-char-img-wrap">
-                                        {c.imageUrl ? (
-                                            <Image
-                                                src={resolveImage(c.imageUrl, urlEndpoint) ?? c.imageUrl}
-                                                alt={c.name}
-                                                width={68}
-                                                height={90}
-                                                className="detail-char-img"
-                                                unoptimized
-                                            />
-                                        ) : (
-                                            <div className="detail-char-no-img">
-                                                {c.name.slice(0, 2).toUpperCase()}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="detail-char-info">
-                                        <span className="detail-char-name">{c.name}</span>
-                                        {c.role && <span className="detail-char-role">{c.role}</span>}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/*  Characters  */}
+                <CharacterGrid characters={characters} />
             </div>
         </section>
     );

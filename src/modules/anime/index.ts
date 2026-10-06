@@ -14,6 +14,7 @@ export { AnimeGrid } from "./components/AnimeGrid";
 export { BookmarkButton } from "./components/BookmarkButton";
 export { CharacterGrid } from "./components/CharacterGrid";
 export { FilterPanel } from "./components/FilterPanel";
+export { Pagination } from "./components/Pagination";
 export { PopularGrid } from "./components/PopularGrid";
 export { RelatedAnime } from "./components/RelatedAnime";
 export { SearchBar } from "./components/SearchBar";

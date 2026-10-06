@@ -9,6 +9,8 @@ import { AnimeGrid } from "@/modules/anime/components/AnimeGrid";
 import { SearchBar } from "@/modules/anime/components/SearchBar";
 import { FilterPanel } from "@/modules/anime/components/FilterPanel";
 import { Pagination } from "@/modules/anime/components/Pagination";
+import { SearchEmptyState } from "@/modules/anime/components/SearchEmptyState";
+import { SearchErrorState } from "@/modules/anime/components/SearchErrorState";
 import { useSearch } from "@/modules/anime/queries/use-search";
 import { searchQuerySchema } from "@/modules/anime/validations/search-schema";
 import { ROUTES } from "@/lib/constants/route";
@@ -27,7 +29,7 @@ export function SearchContent({
     const searchParams = useSearchParams();
     const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-    // ── Parse & Validate raw URL query parameters via Zod ──
+    // Parse & Validate raw URL query parameters via Zod
     const parsedQuery = useMemo(() => {
         const raw = {
             q: searchParams.get("q") ?? (initialQuery || undefined),
@@ -46,7 +48,7 @@ export function SearchContent({
         ? parsedQuery.error.issues[0]?.message ?? "Invalid search filter parameters"
         : null;
 
-    // ── Build typed search params for useSearch ──
+    // Build typed search params for useSearch
     const searchConfig = useMemo<SearchParams>(() => {
         if (!parsedQuery.success) return {};
         const data = parsedQuery.data;
@@ -60,12 +62,19 @@ export function SearchContent({
         return params;
     }, [parsedQuery]);
 
-    // ── Fetch search results (only when URL parameters are valid) ──
-    const { data, isLoading } = useSearch(searchConfig, 350, {
-        enabled: parsedQuery.success,
-    });
+    // Fetch search results (only when URL parameters are valid)
+    const { data, isLoading, isError, error, refetch, isFetching } = useSearch(
+        searchConfig,
+        350,
+        { enabled: parsedQuery.success },
+    );
 
-    // ── Pagination Handler ──
+    // Reset all filters handler
+    const handleResetFilters = useCallback(() => {
+        router.push(ROUTES.SEARCH);
+    }, [router]);
+
+    // Pagination Handler
     const handlePageChange = useCallback(
         (newPage: number) => {
             const next = new URLSearchParams(searchParams.toString());
@@ -85,7 +94,7 @@ export function SearchContent({
         ? Math.max(1, Math.ceil(data.total / (data.limit || 25)))
         : 1;
 
-    // ── Active filter summary for status bar ──
+    // Active filter summary for status bar
     const activeGenre = searchParams.get("genre") ?? initialGenre;
 
     const filterTags = useMemo(() => {
@@ -107,7 +116,7 @@ export function SearchContent({
 
     return (
         <div className="search-page-layout">
-            {/* ── Search Header & Search Input Bar ── */}
+            {/* Search Header & Search Input Bar */}
             <div className="search-header-container">
                 <div className="search-header-text">
                     <h1 className="search-title">Explore Anime</h1>
@@ -132,7 +141,7 @@ export function SearchContent({
                 </div>
             </div>
 
-            {/* ── Mobile Backdrop ── */}
+            {/* Mobile Backdrop */}
             {mobileFilterOpen && (
                 <div
                     className="search-backdrop"
@@ -141,15 +150,15 @@ export function SearchContent({
                 />
             )}
 
-            {/* ── Main Two-Column Layout (Sidebar + Results) ── */}
+            {/* Main Two-Column Layout (Sidebar + Results) */}
             <div className="search-main-columns">
-                {/* ── Filter Sidebar ── */}
+                {/* Filter Sidebar */}
                 <FilterPanel
                     className={mobileFilterOpen ? "mobile-open" : ""}
                     onClose={() => setMobileFilterOpen(false)}
                 />
 
-                {/* ── Results Area ── */}
+                {/* Results Area */}
                 <main className="search-results-area">
                     {/* Status Bar */}
                     <div className="search-results-bar">
@@ -158,71 +167,66 @@ export function SearchContent({
                                 <span style={{ color: "var(--accent-readable)" }}>
                                     {validationError}
                                 </span>
+                            ) : isError ? (
+                                <span style={{ color: "var(--accent-readable)" }}>
+                                    Unable to load anime catalog
+                                </span>
                             ) : isLoading ? (
                                 "Searching anime catalog..."
+                            ) : isFetching ? (
+                                "Updating results..."
                             ) : data ? (
-                                <>
-                                    Found <strong>{data.total.toLocaleString()}</strong> anime
-                                    {filterTags.length > 0
-                                        ? ` (${filterTags.join(" · ")})`
-                                        : " · Browsing all titles"}
-                                    {totalPages > 1 && (
-                                        <span style={{ opacity: 0.7, marginLeft: "6px" }}>
-                                            · Page {data.page} of {totalPages}
-                                        </span>
-                                    )}
-                                </>
+                                data.total === 0 ? (
+                                    "No matching titles found"
+                                ) : (
+                                    <>
+                                        Found <strong>{data.total.toLocaleString()}</strong> anime
+                                        {filterTags.length > 0
+                                            ? ` (${filterTags.join(" · ")})`
+                                            : " · Browsing all titles"}
+                                        {totalPages > 1 && (
+                                            <span style={{ opacity: 0.7, marginLeft: "6px" }}>
+                                                · Page {data.page} of {totalPages}
+                                            </span>
+                                        )}
+                                    </>
+                                )
                             ) : (
                                 "No results"
                             )}
                         </span>
                     </div>
 
-                    {/* Results Grid or Invalid Filter State */}
+                    {/* Results Content Area */}
                     {isInvalidSearch ? (
-                        <div
-                            style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                padding: "48px 24px",
-                                border: "1px solid var(--border)",
-                                borderRadius: "12px",
-                                backgroundColor: "var(--bg-card)",
-                                textAlign: "center",
-                                gap: "12px",
-                            }}
-                        >
-                            <p style={{ fontSize: "16px", fontWeight: 600, color: "var(--text)" }}>
-                                Invalid Search Filter
-                            </p>
-                            <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
-                                {validationError}
-                            </p>
-                            <Link
-                                href={ROUTES.SEARCH}
-                                style={{
-                                    marginTop: "8px",
-                                    padding: "8px 16px",
-                                    fontSize: "13px",
-                                    fontWeight: 600,
-                                    color: "var(--text)",
-                                    backgroundColor: "var(--bg-surface)",
-                                    border: "1px solid var(--border)",
-                                    borderRadius: "8px",
-                                    textDecoration: "none",
-                                }}
-                            >
+                        <div className="search-state-card" role="alert">
+                            <div className="search-state-icon-wrapper search-state-icon-error">
+                                <SlidersHorizontal size={30} />
+                            </div>
+                            <h3 className="search-state-title">Invalid Search Filter</h3>
+                            <p className="search-state-desc">{validationError}</p>
+                            <Link href={ROUTES.SEARCH} className="search-state-action-btn">
                                 Reset Filters
                             </Link>
                         </div>
+                    ) : isError ? (
+                        <SearchErrorState
+                            error={error}
+                            onRetry={() => refetch()}
+                            isRetrying={isFetching}
+                        />
+                    ) : !isLoading && !isFetching && data?.data.length === 0 ? (
+                        <SearchEmptyState
+                            query={searchParams.get("q") ?? initialQuery}
+                            hasActiveFilters={filterTags.length > 0}
+                            onReset={handleResetFilters}
+                        />
                     ) : (
                         <>
                             <AnimeGrid isLoading={isLoading} anime={data?.data ?? []} />
 
                             {/* Pagination Controls */}
-                            {data && (
+                            {data && data.data.length > 0 && (
                                 <Pagination
                                     currentPage={data.page}
                                     totalPages={totalPages}

@@ -117,7 +117,7 @@ export default function Footer() {
                         &copy; {currentYear} AnimeKun. All rights reserved.
                     </p>
                     <p className="footer-credit">
-                        Crafted with <Heart size={14} className="footer-heart-icon" /> for anime fans worldwide.
+                        Created with <Heart size={14} className="footer-heart-icon" /> for anime fans worldwide.
                     </p>
                 </div>
             </div>

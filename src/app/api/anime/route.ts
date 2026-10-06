@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 
 import { ApiResponse } from "@/lib/utils/api-response";
-import { VALID_GENRE_IDS, GENRE_SLUG_TO_ID } from "@/lib/constants/genres";
+import { searchQuerySchema } from "@/modules/anime/validations/search-schema";
 import { animeProvider } from "@/services/anime-provider";
 
 /**
@@ -22,19 +22,19 @@ export async function GET(request: NextRequest) {
         const { searchParams } = request.nextUrl;
         const type = searchParams.get("type");
 
-        // ── Trending ─────────────────────────────────────────────
+        //  Trending 
         if (type === "trending") {
             const data = await animeProvider.getTrending();
             return ApiResponse.ok(data);
         }
 
-        // ── Popular ──────────────────────────────────────────────
+        //  Popular ─
         if (type === "popular") {
             const data = await animeProvider.getPopular();
             return ApiResponse.ok(data);
         }
 
-        // ── Seasonal ─────────────────────────────────────────────
+        //  Seasonal 
         if (type === "seasonal") {
             const season = searchParams.get("season");
             const yearParam = searchParams.get("year");
@@ -67,74 +67,35 @@ export async function GET(request: NextRequest) {
             return ApiResponse.ok(data);
         }
 
-        // ── Search (default) ─────────────────────────────────────
-        const query = searchParams.get("q") ?? undefined;
-        const genreParam = searchParams.get("genre");
-        const yearParam = searchParams.get("year");
-        const status = searchParams.get("status") as
-            | "airing"
-            | "complete"
-            | "upcoming"
-            | null;
-        const page = Number(searchParams.get("page") ?? 1);
-        const limit = Number(searchParams.get("limit") ?? 25);
-
-        let genreIds: number[] | undefined;
-
-        if (genreParam) {
-            const parsed = genreParam
-                .split(",")
-                .map((s) => s.trim().toLowerCase())
-                .filter(Boolean)
-                .map((val) => GENRE_SLUG_TO_ID[val] ?? Number(val));
-
-            const invalid = parsed.filter((n) => isNaN(n) || !VALID_GENRE_IDS.has(n));
-
-            if (invalid.length > 0) {
-                return ApiResponse.badRequest(
-                    `Invalid genre IDs: ${invalid.join(", ")}`,
-                );
-            }
-
-            genreIds = parsed;
-        }
-
-        const year = yearParam ? Number(yearParam) : undefined;
-
-        if (year !== undefined && (isNaN(year) || year < 1900 || year > 2100)) {
-            return ApiResponse.badRequest("Invalid year");
-        }
-
-        if (status && !["airing", "complete", "upcoming"].includes(status)) {
-            return ApiResponse.badRequest(
-                "Invalid status. Must be one of: airing, complete, upcoming",
-            );
-        }
-
-        // Map UI sort values to Tenrai API order_by values
-        const SORT_MAP: Record<string, "score" | "popularity" | "start_date"> = {
-            score: "score",
-            popularity: "popularity",
-            date: "start_date",
-            start_date: "start_date",
+        //  Search (default) 
+        const rawParams = {
+            q: searchParams.get("q") ?? undefined,
+            genre: searchParams.get("genre") ?? undefined,
+            year: searchParams.get("year") ?? undefined,
+            status: searchParams.get("status") ?? undefined,
+            sort: searchParams.get("sort") ?? undefined,
+            page: searchParams.get("page") ?? undefined,
+            limit: searchParams.get("limit") ?? undefined,
         };
-        const sortParam = searchParams.get("sort");
-        const sort = sortParam ? SORT_MAP[sortParam] : undefined;
 
-        if (sortParam && !sort) {
-            return ApiResponse.badRequest(
-                "Invalid sort. Must be one of: score, popularity, date",
-            );
+        const parsed = searchQuerySchema.safeParse(rawParams);
+
+        if (!parsed.success) {
+            const firstError =
+                parsed.error.issues[0]?.message ?? "Invalid search parameters";
+            return ApiResponse.badRequest(firstError);
         }
+
+        const { q, genre, year, status, sort, page, limit } = parsed.data;
 
         const data = await animeProvider.search({
-            query,
-            genreIds,
+            query: q,
+            genreIds: genre,
             year,
-            status: status ?? undefined,
+            status,
             sort,
-            page: isNaN(page) || page < 1 ? 1 : page,
-            limit: isNaN(limit) || limit < 1 ? 25 : Math.min(limit, 50),
+            page,
+            limit,
         });
 
         return ApiResponse.ok(data);

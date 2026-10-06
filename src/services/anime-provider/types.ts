@@ -34,6 +34,7 @@ export interface SearchParams {
   genreIds?: number[];
   year?: number;
   status?: "airing" | "complete" | "upcoming";
+  sort?: "score" | "popularity" | "date" | "start_date";
   page?: number;
   limit?: number;
 }

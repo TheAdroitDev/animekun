@@ -36,6 +36,10 @@ async function fetchSearch(params: SearchParams): Promise<PaginatedResponse<Anim
         searchParams.set("limit", String(params.limit));
     }
 
+    if (params.sort) {
+        searchParams.set("sort", params.sort);
+    }
+
     const queryString = searchParams.toString();
     const endpoint = queryString ? `/anime?${queryString}` : "/anime";
 
@@ -70,6 +74,7 @@ export function useSearch(params: SearchParams = {}, debounceDelay = 350) {
                 genreIds: params.genreIds?.slice().sort().join(","),
                 year: params.year,
                 status: params.status,
+                sort: params.sort,
                 page: params.page ?? 1,
                 limit: params.limit ?? 25,
             },

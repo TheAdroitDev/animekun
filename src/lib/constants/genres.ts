@@ -1,10 +1,10 @@
-/**
- * Genre list with IDs matching Tenrai / MAL genre IDs.
- * Source: https://api.tenrai.org/v1/genres/anime
- *
- * Only curated genres relevant to AnimeKun are included here.
- * NSFW genres (Ecchi, Erotica, Hentai) are intentionally excluded.
- */
+
+ // Genre list with IDs matching Tenrai / MAL genre IDs.
+ // Source: https://api.tenrai.org/v1/genres/anime
+ //
+ // Only curated genres relevant to AnimeKun are included here.
+ // NSFW genres (Ecchi, Erotica, Hentai) are intentionally excluded.
+
 export const GENRES = [
     { id: 1, name: "Action", slug: "action" },
     { id: 2, name: "Adventure", slug: "adventure" },
@@ -32,5 +32,15 @@ export const GENRES = [
     { id: 23, name: "School", slug: "school" },
 ] as const;
 
-/** Set of valid genre IDs for quick validation in API routes. */
+// Set of valid genre IDs for quick validation in API routes. 
 export const VALID_GENRE_IDS: Set<number> = new Set(GENRES.map((g) => g.id));
+
+// Fast lookup map from slug (e.g. "action") to numeric genre ID (e.g. 1) 
+export const GENRE_SLUG_TO_ID: Record<string, number> = Object.fromEntries(
+    GENRES.map((g) => [g.slug, g.id]),
+);
+
+// Fast lookup map from numeric genre ID (e.g. 1) to slug (e.g. "action") 
+export const GENRE_ID_TO_SLUG: Record<number, string> = Object.fromEntries(
+    GENRES.map((g) => [g.id, g.slug]),
+);

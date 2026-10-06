@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 
 import { AnimeGrid } from "@/modules/anime/components/AnimeGrid";
 import { SearchBar } from "@/modules/anime/components/SearchBar";
 import { FilterPanel } from "@/modules/anime/components/FilterPanel";
+import { Pagination } from "@/modules/anime/components/Pagination";
 import { useSearch } from "@/modules/anime/queries/use-search";
 import { searchQuerySchema } from "@/modules/anime/validations/search-schema";
 import { ROUTES } from "@/lib/constants/route";
@@ -22,6 +23,7 @@ export function SearchContent({
     initialQuery = "",
     initialGenre = "",
 }: SearchContentProps) {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -63,8 +65,27 @@ export function SearchContent({
         enabled: parsedQuery.success,
     });
 
+    // ── Pagination Handler ──
+    const handlePageChange = useCallback(
+        (newPage: number) => {
+            const next = new URLSearchParams(searchParams.toString());
+            if (newPage > 1) {
+                next.set("page", String(newPage));
+            } else {
+                next.delete("page");
+            }
+            const qs = next.toString();
+            router.push(qs ? `${ROUTES.SEARCH}?${qs}` : ROUTES.SEARCH);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        },
+        [router, searchParams],
+    );
+
+    const totalPages = data
+        ? Math.max(1, Math.ceil(data.total / (data.limit || 25)))
+        : 1;
+
     // ── Active filter summary for status bar ──
-    const activeQuery = searchParams.get("q") ?? initialQuery;
     const activeGenre = searchParams.get("genre") ?? initialGenre;
 
     const filterTags = useMemo(() => {
@@ -83,12 +104,6 @@ export function SearchContent({
         }
         return tags;
     }, [activeGenre, parsedQuery]);
-
-    const statusText = activeQuery
-        ? `Results for "${activeQuery}"${filterTags.length > 0 ? ` (${filterTags.join(" · ")})` : ""}`
-        : filterTags.length > 0
-          ? `Filtered by: ${filterTags.join(" · ")}`
-          : "Browsing all titles";
 
     return (
         <div className="search-page-layout">
@@ -143,13 +158,22 @@ export function SearchContent({
                                 <span style={{ color: "var(--accent-readable)" }}>
                                     {validationError}
                                 </span>
-                            ) : (
+                            ) : isLoading ? (
+                                "Searching anime catalog..."
+                            ) : data ? (
                                 <>
-                                    {statusText}
-                                    {data && !isLoading && (
-                                        <> — {data.total} result{data.total !== 1 ? "s" : ""}</>
+                                    Found <strong>{data.total.toLocaleString()}</strong> anime
+                                    {filterTags.length > 0
+                                        ? ` (${filterTags.join(" · ")})`
+                                        : " · Browsing all titles"}
+                                    {totalPages > 1 && (
+                                        <span style={{ opacity: 0.7, marginLeft: "6px" }}>
+                                            · Page {data.page} of {totalPages}
+                                        </span>
                                     )}
                                 </>
+                            ) : (
+                                "No results"
                             )}
                         </span>
                     </div>
@@ -194,7 +218,19 @@ export function SearchContent({
                             </Link>
                         </div>
                     ) : (
-                        <AnimeGrid isLoading={isLoading} anime={data?.data ?? []} />
+                        <>
+                            <AnimeGrid isLoading={isLoading} anime={data?.data ?? []} />
+
+                            {/* Pagination Controls */}
+                            {data && (
+                                <Pagination
+                                    currentPage={data.page}
+                                    totalPages={totalPages}
+                                    hasNextPage={data.hasNextPage}
+                                    onPageChange={handlePageChange}
+                                />
+                            )}
+                        </>
                     )}
                 </main>
             </div>

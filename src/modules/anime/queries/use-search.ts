@@ -4,40 +4,49 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api-client";
 import { useDebounce } from "@/hooks/use-debounce";
+import { searchParamsSchema } from "@/modules/anime/validations/search-schema";
 import type { Anime, PaginatedResponse, SearchParams } from "@/modules/anime/types";
 import type { ApiResponseType } from "@/types/api";
 
 export type { SearchParams };
 
 async function fetchSearch(params: SearchParams): Promise<PaginatedResponse<Anime>> {
+    const validation = searchParamsSchema.safeParse(params);
+    if (!validation.success) {
+        const errorMsg =
+            validation.error.issues[0]?.message ?? "Invalid search parameters";
+        throw new Error(`Search validation failed: ${errorMsg}`);
+    }
+    const safeParams = validation.data;
+
     const searchParams = new URLSearchParams();
 
-    if (params.query?.trim()) {
-        searchParams.set("q", params.query.trim());
+    if (safeParams.query?.trim()) {
+        searchParams.set("q", safeParams.query.trim());
     }
 
-    if (params.genreIds && params.genreIds.length > 0) {
-        searchParams.set("genre", params.genreIds.join(","));
+    if (safeParams.genreIds && safeParams.genreIds.length > 0) {
+        searchParams.set("genre", safeParams.genreIds.join(","));
     }
 
-    if (params.year) {
-        searchParams.set("year", String(params.year));
+    if (safeParams.year) {
+        searchParams.set("year", String(safeParams.year));
     }
 
-    if (params.status) {
-        searchParams.set("status", params.status);
+    if (safeParams.status) {
+        searchParams.set("status", safeParams.status);
     }
 
-    if (params.page && params.page > 1) {
-        searchParams.set("page", String(params.page));
+    if (safeParams.page && safeParams.page > 1) {
+        searchParams.set("page", String(safeParams.page));
     }
 
-    if (params.limit) {
-        searchParams.set("limit", String(params.limit));
+    if (safeParams.limit) {
+        searchParams.set("limit", String(safeParams.limit));
     }
 
-    if (params.sort) {
-        searchParams.set("sort", params.sort);
+    if (safeParams.sort) {
+        searchParams.set("sort", safeParams.sort);
     }
 
     const queryString = searchParams.toString();
@@ -57,7 +66,11 @@ async function fetchSearch(params: SearchParams): Promise<PaginatedResponse<Anim
 // Automatically debounces search text input and keeps previous results
 // while fetching fresh data to avoid jarring UI flickers.
 
-export function useSearch(params: SearchParams = {}, debounceDelay = 350) {
+export function useSearch(
+    params: SearchParams = {},
+    debounceDelay = 350,
+    options?: { enabled?: boolean },
+) {
     const debouncedQuery = useDebounce(params.query ?? "", debounceDelay);
 
     const activeParams: SearchParams = {
@@ -80,6 +93,7 @@ export function useSearch(params: SearchParams = {}, debounceDelay = 350) {
             },
         ],
         queryFn: () => fetchSearch(activeParams),
+        enabled: options?.enabled ?? true,
         placeholderData: keepPreviousData,
         staleTime: 2 * 60 * 1000, // 2 minutes
     });

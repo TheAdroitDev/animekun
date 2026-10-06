@@ -111,11 +111,28 @@ export async function GET(request: NextRequest) {
             );
         }
 
+        // Map UI sort values to Tenrai API order_by values
+        const SORT_MAP: Record<string, "score" | "popularity" | "start_date"> = {
+            score: "score",
+            popularity: "popularity",
+            date: "start_date",
+            start_date: "start_date",
+        };
+        const sortParam = searchParams.get("sort");
+        const sort = sortParam ? SORT_MAP[sortParam] : undefined;
+
+        if (sortParam && !sort) {
+            return ApiResponse.badRequest(
+                "Invalid sort. Must be one of: score, popularity, date",
+            );
+        }
+
         const data = await animeProvider.search({
             query,
             genreIds,
             year,
             status: status ?? undefined,
+            sort,
             page: isNaN(page) || page < 1 ? 1 : page,
             limit: isNaN(limit) || limit < 1 ? 25 : Math.min(limit, 50),
         });

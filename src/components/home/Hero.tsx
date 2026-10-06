@@ -36,7 +36,7 @@ export default function Hero() {
                 <div className="hero-actions">
                     <Link href="/search" className="btn-primary">
                         <HugeiconsIcon icon={AiMagicIcon} size={16} strokeWidth={2} />
-                        <span>Generate Anime</span>
+                        <span>Search Anime</span>
                     </Link>
                     <Link href="#quiz" className="btn-secondary">
                         <HugeiconsIcon icon={Quiz01Icon} size={16} strokeWidth={1.8} />

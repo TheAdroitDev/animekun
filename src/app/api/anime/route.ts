@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 
 import { ApiResponse } from "@/lib/utils/api-response";
-import { VALID_GENRE_IDS } from "@/lib/constants/genres";
+import { VALID_GENRE_IDS, GENRE_SLUG_TO_ID } from "@/lib/constants/genres";
 import { animeProvider } from "@/services/anime-provider";
 
 /**
@@ -82,7 +82,12 @@ export async function GET(request: NextRequest) {
         let genreIds: number[] | undefined;
 
         if (genreParam) {
-            const parsed = genreParam.split(",").map(Number);
+            const parsed = genreParam
+                .split(",")
+                .map((s) => s.trim().toLowerCase())
+                .filter(Boolean)
+                .map((val) => GENRE_SLUG_TO_ID[val] ?? Number(val));
+
             const invalid = parsed.filter((n) => isNaN(n) || !VALID_GENRE_IDS.has(n));
 
             if (invalid.length > 0) {

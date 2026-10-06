@@ -2899,15 +2899,31 @@ button {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
   position: sticky;
   top: 96px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 .search-sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-sidebar-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-sidebar-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .search-sidebar-title {
@@ -2916,6 +2932,36 @@ button {
   letter-spacing: -0.01em;
   color: var(--text-primary);
   margin: 0;
+}
+
+.search-sidebar-badge {
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--accent);
+  color: #FFFFFF;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  line-height: 1.2;
+}
+
+.search-sidebar-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.search-sidebar-reset-btn:hover {
+  color: var(--accent-readable);
+  background: var(--bg-secondary);
 }
 
 .search-sidebar-close-btn {
@@ -2927,26 +2973,74 @@ button {
   padding: 4px;
 }
 
+.search-filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-filter-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .search-filter-heading {
   font-size: 11.5px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
-  margin: 0 0 12px;
+  margin: 0;
+  cursor: pointer;
 }
 
-.search-genre-list {
+.search-filter-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-readable);
+}
+
+/* Styled Filter Dropdowns */
+.search-filter-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-filter-select {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.search-filter-select:focus {
+  border-color: var(--border-hover);
+}
+
+/* Status Filter Pills */
+.search-status-pills {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.search-genre-tag {
+.search-status-pill {
   font-size: 12px;
   font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 9999px;
+  padding: 6px 12px;
+  border-radius: 8px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   color: var(--text-secondary);
@@ -2954,15 +3048,85 @@ button {
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.search-genre-tag:hover {
+.search-status-pill:hover {
   background: var(--bg-elevated);
   color: var(--text-primary);
 }
 
-.search-genre-tag.active {
+.search-status-pill.active {
   background: var(--accent);
   border-color: var(--accent);
   color: #FFFFFF;
+}
+
+/* Genre Checkbox Grid */
+.search-genre-checkbox-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.search-genre-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.search-genre-checkbox-item:hover {
+  background: var(--bg-secondary);
+}
+
+.search-genre-checkbox-item.checked {
+  background: var(--bg-secondary);
+}
+
+.search-checkbox-box {
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #FFFFFF;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.search-checkbox-box.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.search-checkbox-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: color 0.15s ease;
+}
+
+.search-genre-checkbox-item.checked .search-checkbox-label {
+  color: var(--text-primary);
+}
+
+/* Mobile Backdrop */
+.search-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 190;
+  backdrop-filter: blur(2px);
 }
 
 /* Results Area */

@@ -34,7 +34,7 @@ export default function Hero() {
                 </p>
 
                 <div className="hero-actions">
-                    <Link href="#generate" className="btn-primary">
+                    <Link href="/search" className="btn-primary">
                         <HugeiconsIcon icon={AiMagicIcon} size={16} strokeWidth={2} />
                         <span>Generate Anime</span>
                     </Link>

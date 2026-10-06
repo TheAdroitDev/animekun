@@ -34,8 +34,8 @@ const navigationLinks = [
 
 const socialLinks = [
     {
-        label: "Instagram",
-        href: "https://www.instagram.com/theadroitdev/",
+        label: "Website",
+        href: "https://www.theadroitdev.com/",
         icon: Cat,
     },
 ];

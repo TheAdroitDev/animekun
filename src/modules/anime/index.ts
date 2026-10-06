@@ -24,4 +24,14 @@ export { usePopular } from "./queries/use-popular";
 export { useCharacters } from "./queries/use-characters";
 export { useSeasonal, getCurrentSeason } from "./queries/use-seasonal";
 export { useSearch } from "./queries/use-search";
-
+export {
+    searchQuerySchema,
+    searchParamsSchema,
+    searchStatusSchema,
+    searchSortSchema,
+} from "./validations/search-schema";
+export type {
+    SearchQueryInput,
+    SearchQueryOutput,
+    ValidatedSearchParams,
+} from "./validations/search-schema";

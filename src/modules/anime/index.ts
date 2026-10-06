@@ -18,6 +18,8 @@ export { Pagination } from "./components/Pagination";
 export { PopularGrid } from "./components/PopularGrid";
 export { RelatedAnime } from "./components/RelatedAnime";
 export { SearchBar } from "./components/SearchBar";
+export { SearchEmptyState } from "./components/SearchEmptyState";
+export { SearchErrorState } from "./components/SearchErrorState";
 export { SeasonalAnime } from "./components/SeasonalAnime";
 export { TrendingCarousel } from "./components/TrendingCarousel";
 export { useTrending } from "./queries/use-trending";

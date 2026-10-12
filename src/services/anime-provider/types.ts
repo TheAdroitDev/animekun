@@ -29,12 +29,16 @@ export interface Character {
   role: string | null;
 }
 
+import type { SearchStatus, SearchSort } from "@/lib/constants/search-filters";
+
 export interface SearchParams {
   query?: string;
   genreIds?: number[];
   year?: number;
-  status?: "airing" | "complete" | "upcoming";
-  sort?: "score" | "popularity" | "date";
+  startDate?: string;
+  endDate?: string;
+  status?: SearchStatus;
+  sort?: SearchSort;
   page?: number;
   limit?: number;
 }

@@ -222,9 +222,16 @@ export class TenraiProvider implements AnimeProvider {
                             q: params.query,
                             genres: params.genreIds?.join(","),
                             year: params.year,
+                            start_date: params.startDate,
+                            end_date: params.endDate,
                             status: params.status,
                             order_by: params.sort === "date" ? "start_date" : params.sort,
-                            sort: params.sort === "popularity" ? "asc" : params.sort ? "desc" : undefined,
+                            sort:
+                                params.sort === "popularity" || params.sort === "title"
+                                    ? "asc"
+                                    : params.sort
+                                      ? "desc"
+                                      : undefined,
                             page: params.page ?? 1,
                             limit: Math.min(params.limit ?? 25, 50),
                             sfw: true,

@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 
 import { AnimeGrid } from "@/modules/anime/components/AnimeGrid";
 import { SearchBar } from "@/modules/anime/components/SearchBar";
@@ -13,8 +12,78 @@ import { SearchEmptyState } from "@/modules/anime/components/SearchEmptyState";
 import { SearchErrorState } from "@/modules/anime/components/SearchErrorState";
 import { useSearch } from "@/modules/anime/queries/use-search";
 import { searchQuerySchema } from "@/modules/anime/validations/search-schema";
+import { GENRES } from "@/lib/constants/genres";
 import { ROUTES } from "@/lib/constants/route";
+import {
+    STATUS_LABELS,
+    SORT_LABELS,
+    FILTER_PARAM_KEYS,
+} from "@/lib/constants/search-filters";
 import type { SearchParams } from "@/modules/anime/types";
+
+const GENRE_SLUG_TO_NAME: Record<string, string> = Object.fromEntries(
+    GENRES.map((g) => [g.slug, g.name]),
+);
+
+interface ActiveChip {
+    id: string;
+    label: string;
+    keysToRemove: string[];
+    /** For genre chips: remaining genre slugs after removal (so we update rather than delete). */
+    genreRemainder?: string[];
+}
+
+/** Build URL string from search params. */
+function buildSearchUrl(sp: URLSearchParams): string {
+    const qs = sp.toString();
+    return qs ? `${ROUTES.SEARCH}?${qs}` : ROUTES.SEARCH;
+}
+
+/** Collect active filter chips from the current URL search params. */
+function collectActiveChips(sp: URLSearchParams): ActiveChip[] {
+    const chips: ActiveChip[] = [];
+
+    // Genres — one chip per selected genre slug
+    const rawGenre = sp.get("genre");
+    if (rawGenre) {
+        const slugs = rawGenre.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+        for (const slug of slugs) {
+            chips.push({
+                id: `genre-${slug}`,
+                label: `Genre: ${GENRE_SLUG_TO_NAME[slug] ?? slug}`,
+                keysToRemove: ["genre"],
+                genreRemainder: slugs.filter((s) => s !== slug),
+            });
+        }
+    }
+
+    // Simple key→label mappings
+    const simpleParams: {
+        key: string;
+        prefix: string;
+        labels?: Record<string, string>;
+        aliases?: string[];
+    }[] = [
+        { key: "year", prefix: "Year" },
+        { key: "startDate", prefix: "From", aliases: ["start_date"] },
+        { key: "endDate", prefix: "To", aliases: ["end_date"] },
+        { key: "status", prefix: "Status", labels: STATUS_LABELS },
+        { key: "sort", prefix: "Sort", labels: SORT_LABELS },
+    ];
+
+    for (const { key, prefix, labels, aliases } of simpleParams) {
+        const value = sp.get(key) ?? (aliases ? aliases.reduce<string | null>((v, a) => v ?? sp.get(a), null) : null);
+        if (value) {
+            chips.push({
+                id: `${key}-${value}`,
+                label: `${prefix}: ${labels?.[value] ?? value}`,
+                keysToRemove: [key, ...(aliases ?? [])],
+            });
+        }
+    }
+
+    return chips;
+}
 
 interface SearchContentProps {
     initialQuery?: string;
@@ -23,100 +92,131 @@ interface SearchContentProps {
 
 export function SearchContent({
     initialQuery = "",
-    initialGenre = "",
 }: SearchContentProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+    const [isFilterOpen, setIsFilterOpen] = useState(true);
 
-    // Parse & Validate raw URL query parameters via Zod
+    // ── URL Validation (useSearchParams is the sole single source of truth) ──
     const parsedQuery = useMemo(() => {
         const raw = {
-            q: searchParams.get("q") ?? (initialQuery || undefined),
-            genre: searchParams.get("genre") ?? (initialGenre || undefined),
+            q: searchParams.get("q") ?? undefined,
+            genre: searchParams.get("genre") ?? undefined,
             year: searchParams.get("year") ?? undefined,
+            startDate: searchParams.get("startDate") ?? searchParams.get("start_date") ?? undefined,
+            endDate: searchParams.get("endDate") ?? searchParams.get("end_date") ?? undefined,
             status: searchParams.get("status") ?? undefined,
             sort: searchParams.get("sort") ?? undefined,
             page: searchParams.get("page") ?? undefined,
         };
-
         return searchQuerySchema.safeParse(raw);
-    }, [searchParams, initialQuery, initialGenre]);
+    }, [searchParams]);
 
     const isInvalidSearch = !parsedQuery.success;
-    const validationError = !parsedQuery.success
+    const validationError = isInvalidSearch
         ? parsedQuery.error.issues[0]?.message ?? "Invalid search filter parameters"
         : null;
 
-    // Build typed search params for useSearch
+    // ── Build typed SearchParams for the API hook ──
     const searchConfig = useMemo<SearchParams>(() => {
         if (!parsedQuery.success) return {};
-        const data = parsedQuery.data;
-        const params: SearchParams = {};
-        if (data.q) params.query = data.q;
-        if (data.genre) params.genreIds = data.genre;
-        if (data.year) params.year = data.year;
-        if (data.status) params.status = data.status;
-        if (data.sort) params.sort = data.sort;
-        if (data.page) params.page = data.page;
-        return params;
+        const d = parsedQuery.data;
+        return {
+            ...(d.q && { query: d.q }),
+            ...(d.genre && { genreIds: d.genre }),
+            ...(d.year && { year: d.year }),
+            ...(d.startDate && { startDate: d.startDate }),
+            ...(d.endDate && { endDate: d.endDate }),
+            ...(d.status && { status: d.status }),
+            ...(d.sort && { sort: d.sort }),
+            ...(d.page && { page: d.page }),
+        };
     }, [parsedQuery]);
 
-    // Fetch search results (only when URL parameters are valid)
+    // ── Data fetching ──
     const { data, isLoading, isError, error, refetch, isFetching } = useSearch(
         searchConfig,
         350,
         { enabled: parsedQuery.success },
     );
 
-    // Reset all filters handler
-    const handleResetFilters = useCallback(() => {
-        router.push(ROUTES.SEARCH);
-    }, [router]);
-
-    // Pagination Handler
-    const handlePageChange = useCallback(
-        (newPage: number) => {
+    // ── Navigation helpers ──
+    const navigateSearch = useCallback(
+        (mutate: (sp: URLSearchParams) => void) => {
             const next = new URLSearchParams(searchParams.toString());
-            if (newPage > 1) {
-                next.set("page", String(newPage));
-            } else {
-                next.delete("page");
-            }
-            const qs = next.toString();
-            router.push(qs ? `${ROUTES.SEARCH}?${qs}` : ROUTES.SEARCH);
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            mutate(next);
+            router.push(buildSearchUrl(next));
         },
         [router, searchParams],
     );
 
-    const totalPages = data
-        ? Math.max(1, Math.ceil(data.total / (data.limit || 25)))
-        : 1;
+    // Clear all filters while preserving search query `q`
+    const handleClearAllFilters = useCallback(() => {
+        navigateSearch((sp) => {
+            for (const key of FILTER_PARAM_KEYS) {
+                sp.delete(key);
+            }
+            sp.delete("page");
+        });
+    }, [navigateSearch]);
 
-    // Active filter summary for status bar
-    const activeGenre = searchParams.get("genre") ?? initialGenre;
+    const handlePageChange = useCallback(
+        (newPage: number) => {
+            navigateSearch((sp) => {
+                if (newPage > 1) {
+                    sp.set("page", String(newPage));
+                } else {
+                    sp.delete("page");
+                }
+            });
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        },
+        [navigateSearch],
+    );
 
-    const filterTags = useMemo(() => {
-        if (!parsedQuery.success) return [];
-        const SORT_LABELS: Record<string, string> = {
-            score: "Highest Score",
-            popularity: "Most Popular",
-            date: "Latest Release",
-        };
-        const tags: string[] = [];
-        if (activeGenre) tags.push(`Genre: ${activeGenre}`);
-        if (parsedQuery.data.year) tags.push(`Year: ${parsedQuery.data.year}`);
-        if (parsedQuery.data.status) tags.push(`Status: ${parsedQuery.data.status}`);
-        if (parsedQuery.data.sort && SORT_LABELS[parsedQuery.data.sort]) {
-            tags.push(`Sort: ${SORT_LABELS[parsedQuery.data.sort]}`);
-        }
-        return tags;
-    }, [activeGenre, parsedQuery]);
+    // ── Active filter chips (derived solely from URL) ──
+    const activeChips = useMemo(
+        () => collectActiveChips(searchParams),
+        [searchParams],
+    );
+
+    const removeChip = useCallback(
+        (chip: ActiveChip) => {
+            navigateSearch((sp) => {
+                if (chip.genreRemainder !== undefined) {
+                    if (chip.genreRemainder.length > 0) {
+                        sp.set("genre", chip.genreRemainder.join(","));
+                    } else {
+                        sp.delete("genre");
+                    }
+                } else {
+                    for (const key of chip.keysToRemove) {
+                        sp.delete(key);
+                    }
+                }
+                sp.delete("page");
+            });
+        },
+        [navigateSearch],
+    );
+
+    // ── Derived display values ──
+    const totalPages = data ? Math.max(1, Math.ceil(data.total / (data.limit || 25))) : 1;
+
+    // ── Status bar text ──
+    const statusText = useMemo(() => {
+        if (isInvalidSearch) return null;
+        if (isError) return null;
+        if (isLoading) return "Searching anime catalog...";
+        if (isFetching) return "Updating results...";
+        if (!data) return "No results";
+        if (data.total === 0) return "No matching titles found";
+        return null;
+    }, [isInvalidSearch, isError, isLoading, isFetching, data]);
 
     return (
         <div className="search-page-layout">
-            {/* Search Header & Search Input Bar */}
+            {/* Search Header */}
             <div className="search-header-container">
                 <div className="search-header-text">
                     <h1 className="search-title">Explore Anime</h1>
@@ -124,120 +224,113 @@ export function SearchContent({
                         Search by title, filter across 20+ genres, or discover seasonal staples.
                     </p>
                 </div>
-
                 <SearchBar defaultValue={initialQuery} />
-
-                {/* Mobile Filter Toggle */}
-                <div className="search-mobile-filter-bar">
-                    <button
-                        type="button"
-                        className="search-mobile-filter-btn"
-                        onClick={() => setMobileFilterOpen((prev) => !prev)}
-                        aria-expanded={mobileFilterOpen}
-                    >
-                        <SlidersHorizontal size={16} />
-                        <span>Filters {activeGenre ? `(${activeGenre})` : ""}</span>
-                    </button>
-                </div>
             </div>
 
-            {/* Mobile Backdrop */}
-            {mobileFilterOpen && (
-                <div
-                    className="search-backdrop"
-                    onClick={() => setMobileFilterOpen(false)}
-                    aria-hidden="true"
-                />
+            {/* Top-Level Filter Panel (batch / staged filtering) */}
+            <FilterPanel
+                isOpen={isFilterOpen}
+                onToggle={() => setIsFilterOpen((prev) => !prev)}
+                onApply={() => setIsFilterOpen(false)}
+            />
+
+            {/* Active Filter Chips */}
+            {activeChips.length > 0 && (
+                <div className="active-filters-bar" aria-label="Active filters">
+                    <span className="active-filters-label">Active Filters:</span>
+                    <div className="active-filters-chips-wrap">
+                        {activeChips.map((chip) => (
+                            <button
+                                key={chip.id}
+                                type="button"
+                                onClick={() => removeChip(chip)}
+                                className="active-filter-chip"
+                                title={`Remove ${chip.label}`}
+                            >
+                                <span>{chip.label}</span>
+                                <X size={13} className="active-filter-chip-remove" />
+                            </button>
+                        ))}
+                        <button
+                            type="button"
+                            onClick={handleClearAllFilters}
+                            className="active-filters-clear-all"
+                        >
+                            Clear All
+                        </button>
+                    </div>
+                </div>
             )}
 
-            {/* Main Two-Column Layout (Sidebar + Results) */}
-            <div className="search-main-columns">
-                {/* Filter Sidebar */}
-                <FilterPanel
-                    className={mobileFilterOpen ? "mobile-open" : ""}
-                    onClose={() => setMobileFilterOpen(false)}
-                />
+            {/* Results */}
+            <main className="search-results-area">
+                {/* Status Bar */}
+                <div className="search-results-bar">
+                    <span className="search-results-count">
+                        {isInvalidSearch ? (
+                            <span style={{ color: "var(--accent-readable)" }}>{validationError}</span>
+                        ) : isError ? (
+                            <span style={{ color: "var(--accent-readable)" }}>Unable to load anime catalog</span>
+                        ) : statusText ? (
+                            statusText
+                        ) : data && data.total > 0 ? (
+                            <>
+                                Found <strong>{data.total.toLocaleString()}</strong> anime
+                                {totalPages > 1 && (
+                                    <span style={{ opacity: 0.7, marginLeft: "6px" }}>
+                                        · Page {data.page} of {totalPages}
+                                    </span>
+                                )}
+                            </>
+                        ) : (
+                            "No results"
+                        )}
+                    </span>
+                </div>
 
-                {/* Results Area */}
-                <main className="search-results-area">
-                    {/* Status Bar */}
-                    <div className="search-results-bar">
-                        <span className="search-results-count">
-                            {isInvalidSearch ? (
-                                <span style={{ color: "var(--accent-readable)" }}>
-                                    {validationError}
-                                </span>
-                            ) : isError ? (
-                                <span style={{ color: "var(--accent-readable)" }}>
-                                    Unable to load anime catalog
-                                </span>
-                            ) : isLoading ? (
-                                "Searching anime catalog..."
-                            ) : isFetching ? (
-                                "Updating results..."
-                            ) : data ? (
-                                data.total === 0 ? (
-                                    "No matching titles found"
-                                ) : (
-                                    <>
-                                        Found <strong>{data.total.toLocaleString()}</strong> anime
-                                        {filterTags.length > 0
-                                            ? ` (${filterTags.join(" · ")})`
-                                            : " · Browsing all titles"}
-                                        {totalPages > 1 && (
-                                            <span style={{ opacity: 0.7, marginLeft: "6px" }}>
-                                                · Page {data.page} of {totalPages}
-                                            </span>
-                                        )}
-                                    </>
-                                )
-                            ) : (
-                                "No results"
-                            )}
-                        </span>
-                    </div>
-
-                    {/* Results Content Area */}
-                    {isInvalidSearch ? (
-                        <div className="search-state-card" role="alert">
-                            <div className="search-state-icon-wrapper search-state-icon-error">
-                                <SlidersHorizontal size={30} />
-                            </div>
-                            <h3 className="search-state-title">Invalid Search Filter</h3>
-                            <p className="search-state-desc">{validationError}</p>
-                            <Link href={ROUTES.SEARCH} className="search-state-action-btn">
-                                Reset Filters
-                            </Link>
+                {/* Content */}
+                {isInvalidSearch ? (
+                    <div className="search-state-card" role="alert">
+                        <div className="search-state-icon-wrapper search-state-icon-error">
+                            <SlidersHorizontal size={30} />
                         </div>
-                    ) : isError ? (
-                        <SearchErrorState
-                            error={error}
-                            onRetry={() => refetch()}
-                            isRetrying={isFetching}
-                        />
-                    ) : !isLoading && !isFetching && data?.data.length === 0 ? (
-                        <SearchEmptyState
-                            query={searchParams.get("q") ?? initialQuery}
-                            hasActiveFilters={filterTags.length > 0}
-                            onReset={handleResetFilters}
-                        />
-                    ) : (
-                        <>
-                            <AnimeGrid isLoading={isLoading} anime={data?.data ?? []} />
+                        <h3 className="search-state-title">Invalid Search Filter</h3>
+                        <p className="search-state-desc">{validationError}</p>
+                        <button
+                            type="button"
+                            onClick={handleClearAllFilters}
+                            className="search-state-action-btn"
+                        >
+                            Reset Filters
+                        </button>
+                    </div>
+                ) : isError ? (
+                    <SearchErrorState
+                        error={error}
+                        onRetry={() => refetch()}
+                        isRetrying={isFetching}
+                    />
+                ) : !isLoading && !isFetching && data?.data.length === 0 ? (
+                    <SearchEmptyState
+                        query={searchParams.get("q") ?? ""}
+                        hasActiveFilters={activeChips.length > 0}
+                        onReset={handleClearAllFilters}
+                    />
+                ) : (
+                    <>
+                        <AnimeGrid isLoading={isLoading} anime={data?.data ?? []} />
 
-                            {/* Pagination Controls */}
-                            {data && data.data.length > 0 && (
-                                <Pagination
-                                    currentPage={data.page}
-                                    totalPages={totalPages}
-                                    hasNextPage={data.hasNextPage}
-                                    onPageChange={handlePageChange}
-                                />
-                            )}
-                        </>
-                    )}
-                </main>
-            </div>
+                        {data && data.data.length > 0 && (
+                            <Pagination
+                                currentPage={data.page}
+                                totalPages={totalPages}
+                                hasNextPage={data.hasNextPage}
+                                onPageChange={handlePageChange}
+                            />
+                        )}
+                    </>
+                )}
+            </main>
         </div>
     );
 }

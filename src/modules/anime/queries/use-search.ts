@@ -33,6 +33,14 @@ async function fetchSearch(params: SearchParams): Promise<PaginatedResponse<Anim
         searchParams.set("year", String(safeParams.year));
     }
 
+    if (safeParams.startDate) {
+        searchParams.set("startDate", safeParams.startDate);
+    }
+
+    if (safeParams.endDate) {
+        searchParams.set("endDate", safeParams.endDate);
+    }
+
     if (safeParams.status) {
         searchParams.set("status", safeParams.status);
     }
@@ -86,6 +94,8 @@ export function useSearch(
                 q: debouncedQuery,
                 genreIds: params.genreIds?.slice().sort().join(","),
                 year: params.year,
+                startDate: params.startDate,
+                endDate: params.endDate,
                 status: params.status,
                 sort: params.sort,
                 page: params.page ?? 1,

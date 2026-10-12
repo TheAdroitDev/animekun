@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
             const year = Number(yearParam);
 
-            if (isNaN(year) || year < 1900 || year > 2100) {
+            if (isNaN(year) || !Number.isInteger(year) || year < 1900 || year > 2100) {
                 return ApiResponse.badRequest("Invalid year");
             }
 
@@ -72,6 +72,8 @@ export async function GET(request: NextRequest) {
             q: searchParams.get("q") ?? undefined,
             genre: searchParams.get("genre") ?? undefined,
             year: searchParams.get("year") ?? undefined,
+            startDate: searchParams.get("startDate") ?? searchParams.get("start_date") ?? undefined,
+            endDate: searchParams.get("endDate") ?? searchParams.get("end_date") ?? undefined,
             status: searchParams.get("status") ?? undefined,
             sort: searchParams.get("sort") ?? undefined,
             page: searchParams.get("page") ?? undefined,
@@ -86,12 +88,14 @@ export async function GET(request: NextRequest) {
             return ApiResponse.badRequest(firstError);
         }
 
-        const { q, genre, year, status, sort, page, limit } = parsed.data;
+        const { q, genre, year, startDate, endDate, status, sort, page, limit } = parsed.data;
 
         const data = await animeProvider.search({
             query: q,
             genreIds: genre,
             year,
+            startDate,
+            endDate,
             status,
             sort,
             page,

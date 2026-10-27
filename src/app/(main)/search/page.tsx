@@ -1,45 +1,52 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { Wrench, ArrowLeft } from "lucide-react";
 
-import { SearchContent } from "./SearchContent";
+import { ROUTES } from "@/lib/constants/route";
 
 export const metadata: Metadata = {
-    title: "Search Anime | AnimeKun",
-    description: "Discover anime by title, genre, year, and status with AnimeKun's real-time anime search engine.",
-    openGraph: {
-        title: "Search Anime | AnimeKun",
-        description: "Discover anime by title, genre, year, and status with AnimeKun's real-time anime search engine.",
-    },
+    title: "Under Maintenance | AnimeKun",
+    description: "Search is currently under maintenance. It will come back soon.",
 };
 
-interface SearchPageProps {
-    searchParams: Promise<{
-        q?: string;
-        genre?: string;
-    }>;
-}
-
-function SearchPageFallback() {
-    return (
-        <div className="search-page-layout">
-            <div className="search-header-container">
-                <div className="detail-skeleton" style={{ width: 220, height: 32, marginBottom: 8 }} />
-                <div className="detail-skeleton" style={{ width: 340, height: 16, marginBottom: 24 }} />
-                <div className="detail-skeleton" style={{ width: "100%", height: 50, borderRadius: 12 }} />
-            </div>
-        </div>
-    );
-}
-
-export default async function SearchPage({ searchParams }: SearchPageProps) {
-    const { q, genre } = await searchParams;
-
+export default function SearchPage() {
     return (
         <section className="search-section">
-            <div className="search-container">
-                <Suspense fallback={<SearchPageFallback />}>
-                    <SearchContent initialQuery={q} initialGenre={genre} />
-                </Suspense>
+            <div className="search-container maintenance-container">
+                <div>
+                    <div >
+                        <Image
+                            src="/doodles/maintenance.png"
+                            alt="AnimeKun search is under maintenance"
+                            width={460}
+                            height={307}
+                            priority
+                        />
+                    </div>
+
+                    <div className="maintenance-content">
+                        <span className="maintenance-badge">
+                            <Wrench size={13} className="maintenance-badge-icon" />
+                            Maintenance Mode
+                        </span>
+
+                        <h1 className="maintenance-title">
+                            Under Maintenance
+                        </h1>
+
+                        <p className="maintenance-description">
+                            We will come back soon guys!
+                        </p>
+
+                        <div className="maintenance-actions">
+                            <Link href={ROUTES.HOME} className="maintenance-home-btn">
+                                <ArrowLeft size={16} />
+                                <span>Return to Home</span>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     );

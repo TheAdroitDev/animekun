@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { RotateCcw, Check, Filter, ChevronDown, ChevronUp } from "lucide-react";
 
 import { GENRES } from "@/lib/constants/genres";
-import { ROUTES } from "@/lib/constants/route";
+import { setSearchUrl } from "@/modules/anime/utils/search-url";
 import {
     STATUS_OPTIONS,
     SORT_OPTIONS,
@@ -83,7 +83,6 @@ function FilterSelect({
 }
 
 export function FilterPanel({ className = "", isOpen = true, onToggle, onApply }: FilterPanelProps) {
-    const router = useRouter();
     const searchParams = useSearchParams();
 
     // Fingerprint of ONLY the applied filter parameters in the URL.
@@ -211,8 +210,7 @@ export function FilterPanel({ className = "", isOpen = true, onToggle, onApply }
         // Reset pagination on filter change
         next.delete("page");
 
-        const qs = next.toString();
-        router.push(qs ? `${ROUTES.SEARCH}?${qs}` : ROUTES.SEARCH);
+        setSearchUrl(next, "push");
 
         // Auto-collapse filter options after applying so the anime results are immediately visible
         if (onApply) {
@@ -220,7 +218,7 @@ export function FilterPanel({ className = "", isOpen = true, onToggle, onApply }
         } else if (onToggle && isOpen) {
             onToggle();
         }
-    }, [searchParams, draft, timingMode, isDateRangeInvalid, router, onApply, onToggle, isOpen]);
+    }, [searchParams, draft, timingMode, isDateRangeInvalid, onApply, onToggle, isOpen]);
 
     // Reset All clears draft filters locally without triggering an API request until Apply is clicked
     const handleReset = useCallback(() => {

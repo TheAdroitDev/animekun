@@ -9,6 +9,7 @@ import { ApiError } from "@/lib/utils/api-error";
 import { ROUTES } from "@/lib/constants/route";
 import { AnimeDetailHeader } from "@/modules/anime/components/AnimeDetailHeader";
 import { AnimeSynopsis } from "@/modules/anime/components/AnimeSynopsis";
+import { AnimeCardSkeleton } from "@/modules/anime/components/AnimeCardSkeleton";
 import { CharacterGrid } from "@/modules/anime/components/CharacterGrid";
 import { RelatedAnime } from "@/modules/anime/components/RelatedAnime";
 import type { Anime, Character } from "@/modules/anime";
@@ -189,7 +190,7 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
                 />
 
                 {/*  Characters (streamed)  */}
-                <Suspense fallback={<SectionSkeleton />}>
+                <Suspense fallback={<CharactersSkeleton />}>
                     <CharactersSection id={id} />
                 </Suspense>
 
@@ -197,7 +198,7 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
                 <RelatedAnime related={anime.relations} />
 
                 {/* ── Recommendations (streamed) ── */}
-                <Suspense fallback={<SectionSkeleton />}>
+                <Suspense fallback={<RecommendationsSkeleton />}>
                     <RecommendationsSection id={id} />
                 </Suspense>
             </div>
@@ -225,17 +226,41 @@ async function RecommendationsSection({ id }: { id: string }) {
     return <RelatedAnime recommendations={recommendations} />;
 }
 
-function SectionSkeleton() {
+// Skeletons reuse the real grid/card classes so the layout doesn't shift
+// when data arrives. Counts match the max rendered (12 characters via
+// CharacterGrid's default limit, 12 recommendations via the provider).
+
+function CharactersSkeleton() {
     return (
         <div className="detail-block" aria-hidden="true">
-            <div className="detail-skeleton" style={{ width: 160, height: 22, marginBottom: 16 }} />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                {Array.from({ length: 6 }, (_, i) => (
-                    <div
-                        key={i}
-                        className="detail-skeleton"
-                        style={{ width: 120, height: 170, borderRadius: 12 }}
-                    />
+            <h2 className="detail-block-heading">Characters</h2>
+            <div className="detail-characters-grid">
+                {Array.from({ length: 12 }, (_, i) => (
+                    <div key={i} className="detail-char-card">
+                        <div className="detail-char-img-wrap">
+                            <span
+                                className="detail-skeleton"
+                                style={{ width: "100%", height: "100%", borderRadius: 0 }}
+                            />
+                        </div>
+                        <div className="detail-char-info" style={{ flex: 1, gap: 6 }}>
+                            <span className="detail-skeleton" style={{ width: "75%", height: 13 }} />
+                            <span className="detail-skeleton" style={{ width: "40%", height: 11 }} />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function RecommendationsSkeleton() {
+    return (
+        <div className="detail-block" aria-hidden="true">
+            <h2 className="detail-block-heading">Recommended Anime</h2>
+            <div className="detail-recommendations-grid">
+                {Array.from({ length: 12 }, (_, i) => (
+                    <AnimeCardSkeleton key={i} />
                 ))}
             </div>
         </div>

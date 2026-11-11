@@ -1,7 +1,11 @@
 import { type NextRequest } from "next/server";
 
+import { ApiError } from "@/lib/utils/api-error";
 import { ApiResponse } from "@/lib/utils/api-response";
 import { animeProvider } from "@/services/anime-provider";
+
+// Anime details rarely change: let Vercel's CDN serve repeats for a day.
+const CACHE_DETAIL = { "Cache-Control": "public, max-age=0, s-maxage=86400, stale-while-revalidate=604800" };
 
 /**
  * GET /api/anime/[id]
@@ -34,11 +38,15 @@ export async function GET(
             return ApiResponse.ok({
                 ...anime,
                 characters,
-            });
+            }, undefined, CACHE_DETAIL);
         }
 
-        return ApiResponse.ok(anime);
+        return ApiResponse.ok(anime, undefined, CACHE_DETAIL);
     } catch (error) {
+        if (error instanceof ApiError && error.statusCode === 404) {
+            return ApiResponse.notFound("Anime not found");
+        }
+
         console.error(`[GET /api/anime/${id}]`, error);
 
         const message =

@@ -12,6 +12,8 @@ import type {
     SearchParams,
 } from "./types";
 
+import { ApiError } from "@/lib/utils/api-error";
+
 import { MemoryCache } from "./cache";
 
 // Tenrai API response types
@@ -622,7 +624,8 @@ export class TenraiProvider implements AnimeProvider {
                 axiosError.code ===
                 "ECONNABORTED"
             ) {
-                return new Error(
+                return new ApiError(
+                    504,
                     "Tenrai request timed out",
                 );
             }
@@ -631,7 +634,10 @@ export class TenraiProvider implements AnimeProvider {
                 const body =
                     axiosError.response.data;
 
-                return new Error(
+                // Keep the upstream status so callers can tell a real 404
+                // apart from an outage (e.g. notFound() vs error page).
+                return new ApiError(
+                    axiosError.response.status,
                     body?.message ??
                     body?.error ??
                     `${fallbackMessage} (${axiosError.response.status})`,
@@ -639,7 +645,8 @@ export class TenraiProvider implements AnimeProvider {
             }
 
             if (axiosError.request) {
-                return new Error(
+                return new ApiError(
+                    502,
                     "Tenrai API is unreachable",
                 );
             }

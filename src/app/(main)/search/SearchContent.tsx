@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 
 import { AnimeGrid } from "@/modules/anime/components/AnimeGrid";
@@ -12,8 +12,8 @@ import { SearchEmptyState } from "@/modules/anime/components/SearchEmptyState";
 import { SearchErrorState } from "@/modules/anime/components/SearchErrorState";
 import { useSearch } from "@/modules/anime/queries/use-search";
 import { searchQuerySchema } from "@/modules/anime/validations/search-schema";
+import { setSearchUrl } from "@/modules/anime/utils/search-url";
 import { GENRES } from "@/lib/constants/genres";
-import { ROUTES } from "@/lib/constants/route";
 import {
     STATUS_LABELS,
     SORT_LABELS,
@@ -29,17 +29,11 @@ interface ActiveChip {
     id: string;
     label: string;
     keysToRemove: string[];
-    /** For genre chips: remaining genre slugs after removal (so we update rather than delete). */
+    // For genre chips: remaining genre slugs after removal (so we update rather than delete). */
     genreRemainder?: string[];
 }
 
-/** Build URL string from search params. */
-function buildSearchUrl(sp: URLSearchParams): string {
-    const qs = sp.toString();
-    return qs ? `${ROUTES.SEARCH}?${qs}` : ROUTES.SEARCH;
-}
-
-/** Collect active filter chips from the current URL search params. */
+// Collect active filter chips from the current URL search params. */
 function collectActiveChips(sp: URLSearchParams): ActiveChip[] {
     const chips: ActiveChip[] = [];
 
@@ -64,12 +58,12 @@ function collectActiveChips(sp: URLSearchParams): ActiveChip[] {
         labels?: Record<string, string>;
         aliases?: string[];
     }[] = [
-        { key: "year", prefix: "Year" },
-        { key: "startDate", prefix: "From", aliases: ["start_date"] },
-        { key: "endDate", prefix: "To", aliases: ["end_date"] },
-        { key: "status", prefix: "Status", labels: STATUS_LABELS },
-        { key: "sort", prefix: "Sort", labels: SORT_LABELS },
-    ];
+            { key: "year", prefix: "Year" },
+            { key: "startDate", prefix: "From", aliases: ["start_date"] },
+            { key: "endDate", prefix: "To", aliases: ["end_date"] },
+            { key: "status", prefix: "Status", labels: STATUS_LABELS },
+            { key: "sort", prefix: "Sort", labels: SORT_LABELS },
+        ];
 
     for (const { key, prefix, labels, aliases } of simpleParams) {
         const value = sp.get(key) ?? (aliases ? aliases.reduce<string | null>((v, a) => v ?? sp.get(a), null) : null);
@@ -85,19 +79,15 @@ function collectActiveChips(sp: URLSearchParams): ActiveChip[] {
     return chips;
 }
 
-interface SearchContentProps {
-    initialQuery?: string;
-    initialGenre?: string;
-}
 
-export function SearchContent({
-    initialQuery = "",
-}: SearchContentProps) {
-    const router = useRouter();
+//Client-side search UI. The URL is the single source of truth, read via
+// useSearchParams(). The parent page is static and wraps this in <Suspense>.
+
+export function SearchContent() {
     const searchParams = useSearchParams();
     const [isFilterOpen, setIsFilterOpen] = useState(true);
 
-    // ── URL Validation (useSearchParams is the sole single source of truth) ──
+    // URL Validation (useSearchParams is the sole single source of truth)
     const parsedQuery = useMemo(() => {
         const raw = {
             q: searchParams.get("q") ?? undefined,
@@ -117,7 +107,7 @@ export function SearchContent({
         ? parsedQuery.error.issues[0]?.message ?? "Invalid search filter parameters"
         : null;
 
-    // ── Build typed SearchParams for the API hook ──
+    // Build typed SearchParams for the API hook
     const searchConfig = useMemo<SearchParams>(() => {
         if (!parsedQuery.success) return {};
         const d = parsedQuery.data;
@@ -133,21 +123,21 @@ export function SearchContent({
         };
     }, [parsedQuery]);
 
-    // ── Data fetching ──
+    // Data fetching
     const { data, isLoading, isError, error, refetch, isFetching } = useSearch(
         searchConfig,
         350,
         { enabled: parsedQuery.success },
     );
 
-    // ── Navigation helpers ──
+    // Navigation helpers
     const navigateSearch = useCallback(
         (mutate: (sp: URLSearchParams) => void) => {
             const next = new URLSearchParams(searchParams.toString());
             mutate(next);
-            router.push(buildSearchUrl(next));
+            setSearchUrl(next, "push");
         },
-        [router, searchParams],
+        [searchParams],
     );
 
     // Clear all filters while preserving search query `q`
@@ -174,7 +164,7 @@ export function SearchContent({
         [navigateSearch],
     );
 
-    // ── Active filter chips (derived solely from URL) ──
+    // Active filter chips (derived solely from URL)
     const activeChips = useMemo(
         () => collectActiveChips(searchParams),
         [searchParams],
@@ -200,10 +190,10 @@ export function SearchContent({
         [navigateSearch],
     );
 
-    // ── Derived display values ──
+    // Derived display values
     const totalPages = data ? Math.max(1, Math.ceil(data.total / (data.limit || 25))) : 1;
 
-    // ── Status bar text ──
+    // Status bar text
     const statusText = useMemo(() => {
         if (isInvalidSearch) return null;
         if (isError) return null;
@@ -224,7 +214,7 @@ export function SearchContent({
                         Search by title, filter across 20+ genres, or discover seasonal staples.
                     </p>
                 </div>
-                <SearchBar defaultValue={initialQuery} />
+                <SearchBar />
             </div>
 
             {/* Top-Level Filter Panel (batch / staged filtering) */}

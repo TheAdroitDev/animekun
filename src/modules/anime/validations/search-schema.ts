@@ -97,11 +97,11 @@ export const searchQuerySchema = z
         ),
         page: z.preprocess(
             (v) => (v === "" || v === null || v === undefined ? undefined : v),
-            z.coerce.number().int().min(1, "Page must be at least 1").default(1),
+            z.coerce.number().int().min(1, "Page must be at least 1").max(100, "Page cannot exceed 100").default(1),
         ),
         limit: z.preprocess(
             (v) => (v === "" || v === null || v === undefined ? undefined : v),
-            z.coerce.number().int().min(1).max(50, "Limit cannot exceed 50").default(25),
+            z.coerce.number().int().min(1).max(25, "Limit cannot exceed 25").default(25),
         ),
     })
     .refine(
@@ -145,8 +145,8 @@ export const searchParamsSchema = z
         endDate: dateStringSchema.optional(),
         status: searchStatusSchema.optional(),
         sort: searchSortSchema.optional(),
-        page: z.number().int().min(1).optional(),
-        limit: z.number().int().min(1).max(50).optional(),
+        page: z.number().int().min(1).max(100).optional(),
+        limit: z.number().int().min(1).max(25).optional(),
     })
     .refine(
         (data) => {

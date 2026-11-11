@@ -14,7 +14,10 @@ export function AnimeCard({ anime }: AnimeCardProps) {
     const { urlEndpoint } = getImageKitConfig();
 
     return (
-        <Link href={ROUTES.ANIME_DETAIL(anime.id)} className="anime-card">
+        // prefetch={false}: grids render 25–55 cards; viewport prefetching each
+        // one multiplied server requests per page view. Detail pages are ISR-
+        // cached, so navigation on click stays fast.
+        <Link href={ROUTES.ANIME_DETAIL(anime.id)} className="anime-card" prefetch={false}>
             {/* Poster */}
             <div className="anime-card-poster">
                 {anime.posterUrl ? (

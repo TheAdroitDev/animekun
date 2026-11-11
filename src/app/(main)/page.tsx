@@ -3,6 +3,7 @@ import GenerateSection from "@/components/home/GenerateSection";
 import QuizSection from "@/components/home/QuizSection";
 import TownHallSection from "@/components/home/TownHallSection";
 import { SectionHeader } from "@/components/shared";
+import { ROUTES } from "@/lib/constants/route";
 import {
     TrendingCarousel,
     PopularGrid,
@@ -20,7 +21,7 @@ export default function Home() {
                     <SectionHeader
                         title="Trending Now"
                         subtitle="Top airing anime trending this week"
-                        viewAllHref="/search?sort=trending"
+                        viewAllHref={`${ROUTES.SEARCH}?status=airing&sort=popularity`}
                     />
                     <TrendingCarousel />
                 </section>
@@ -29,7 +30,7 @@ export default function Home() {
                     <SectionHeader
                         title="All-Time Popular"
                         subtitle="The most watched and highest rated anime of all time"
-                        viewAllHref="/search?sort=popular"
+                        viewAllHref={`${ROUTES.SEARCH}?sort=popularity`}
                     />
                     <PopularGrid />
                 </section>
@@ -38,7 +39,7 @@ export default function Home() {
                     <SectionHeader
                         title="Seasonal Anime"
                         subtitle="Explore anime by release season"
-                        viewAllHref="/search?sort=seasonal"
+                        viewAllHref={`${ROUTES.SEARCH}?status=airing&sort=date`}
                     />
                     <SeasonalAnime />
                 </section>

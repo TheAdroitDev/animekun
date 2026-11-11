@@ -4,6 +4,12 @@ import { ApiResponse } from "@/lib/utils/api-response";
 import { searchQuerySchema } from "@/modules/anime/validations/search-schema";
 import { animeProvider } from "@/services/anime-provider";
 
+// CDN caching: Vercel's edge serves repeat requests without invoking this
+// function. s-maxage = fresh at the CDN, stale-while-revalidate = serve stale
+// while refreshing in the background. Browsers don't cache (max-age=0).
+const CACHE_LISTS = { "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400" };
+const CACHE_SEARCH = { "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=3600" };
+
 /**
  * GET /api/anime
  *
@@ -14,8 +20,8 @@ import { animeProvider } from "@/services/anime-provider";
  *   year     — filter by year (e.g. 2024)
  *   status   — "airing" | "complete" | "upcoming"
  *   season   — required when type=seasonal (e.g. "winter")
- *   page     — pagination page (default: 1)
- *   limit    — results per page (default: 25, max: 50)
+ *   page     — pagination page (default: 1, max: 100)
+ *   limit    — results per page (default: 25, max: 25)
  */
 export async function GET(request: NextRequest) {
     try {
@@ -25,13 +31,13 @@ export async function GET(request: NextRequest) {
         //  Trending 
         if (type === "trending") {
             const data = await animeProvider.getTrending();
-            return ApiResponse.ok(data);
+            return ApiResponse.ok(data, undefined, CACHE_LISTS);
         }
 
         //  Popular ─
         if (type === "popular") {
             const data = await animeProvider.getPopular();
-            return ApiResponse.ok(data);
+            return ApiResponse.ok(data, undefined, CACHE_LISTS);
         }
 
         //  Seasonal 
@@ -64,7 +70,7 @@ export async function GET(request: NextRequest) {
                 year,
             );
 
-            return ApiResponse.ok(data);
+            return ApiResponse.ok(data, undefined, CACHE_LISTS);
         }
 
         //  Search (default) 
@@ -102,7 +108,7 @@ export async function GET(request: NextRequest) {
             limit,
         });
 
-        return ApiResponse.ok(data);
+        return ApiResponse.ok(data, undefined, CACHE_SEARCH);
     } catch (error) {
         console.error("[GET /api/anime]", error);
 

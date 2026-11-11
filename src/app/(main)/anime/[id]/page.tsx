@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { animeProvider } from "@/services/anime-provider";
 import { getImageKitConfig } from "@/lib/config/imagekit";
+import { ApiError } from "@/lib/utils/api-error";
 import { ROUTES } from "@/lib/constants/route";
 import { AnimeDetailHeader } from "@/modules/anime/components/AnimeDetailHeader";
 import { AnimeSynopsis } from "@/modules/anime/components/AnimeSynopsis";
@@ -17,6 +18,23 @@ import type { Anime, Character } from "@/modules/anime";
 // page render — single upstream API call per request, zero wasted fetches.
 
 const getAnimeDetail = cache((id: string) => animeProvider.getAnimeById(id));
+
+// ISR: each anime page is rendered on its first visit, then served from
+// Vercel's cache and regenerated in the background at most once a day.
+// No pages are built at deploy time (empty generateStaticParams), so build
+// time stays flat while ~28k anime remain reachable on demand.
+export const revalidate = 86400;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+    return [];
+}
+
+// MAL IDs are positive integers — reject junk URLs without calling Tenrai.
+const isValidAnimeId = (id: string) => /^[1-9]\d{0,9}$/.test(id);
+
+const isUpstreamNotFound = (error: unknown) =>
+    error instanceof ApiError && error.statusCode === 404;
 
 interface AnimeDetailPageProps {
     params: Promise<{ id: string }>;
@@ -112,9 +130,17 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
     const { id } = await params;
     const { urlEndpoint } = getImageKitConfig();
 
-    // Anime is critical (404 if missing); characters + recommendations are supplementary
+    if (!isValidAnimeId(id)) notFound();
+
+    // Anime is critical; characters + recommendations are supplementary.
+    // Only a real upstream 404 becomes notFound(). Outages/timeouts rethrow so
+    // the error boundary renders and ISR keeps serving the last good page,
+    // instead of telling Google the page doesn't exist.
     const [anime, characters, recommendations] = await Promise.all([
-        getAnimeDetail(id).catch(() => null),
+        getAnimeDetail(id).catch((error: unknown) => {
+            if (isUpstreamNotFound(error)) return null;
+            throw error;
+        }),
         animeProvider.getCharacters(id).catch((): Character[] => []),
         animeProvider.getRecommendations(id).catch((): Anime[] => []),
     ]);

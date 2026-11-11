@@ -1,12 +1,14 @@
 import { relations } from "drizzle-orm";
 
-import { accounts, aiRequests, sessions, userPreferences, users, verifications, } from "./users";
+import { accounts, aiRequests, sessions, userPreferences, userRoleEnum, userTierEnum, users, verifications, } from "./users";
 import { bookmarkBoards, bookmarks, } from "./bookmarks";
 import { achievements, quizScores, } from "./quiz";
 import { chatMessages, notifications, } from "./chat";
 import { feedback } from "./feedback";
 
-export { users, accounts, sessions, verifications, userPreferences, bookmarkBoards, bookmarks, quizScores, achievements, chatMessages, notifications, aiRequests, feedback }
+// Enums must be exported here too: drizzle-kit only sees what this file
+// exports, and would otherwise try to DROP enums that exist in the database.
+export { userRoleEnum, userTierEnum, users, accounts, sessions, verifications, userPreferences, bookmarkBoards, bookmarks, quizScores, achievements, chatMessages, notifications, aiRequests, feedback }
 
 
 export const usersRelations = relations(users, ({ many, one }) => ({

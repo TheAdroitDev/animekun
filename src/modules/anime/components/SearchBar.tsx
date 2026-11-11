@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 
-import { ROUTES } from "@/lib/constants/route";
+import { setSearchUrl } from "@/modules/anime/utils/search-url";
 
 interface SearchBarProps {
     defaultValue?: string;
@@ -24,20 +24,26 @@ export function SearchBar({
     autoFocus = false,
     onSearch,
 }: SearchBarProps) {
-    const router = useRouter();
     const searchParams = useSearchParams();
 
     const paramQuery = searchParams.get("q") ?? defaultValue;
     const [inputValue, setInputValue] = useState(paramQuery);
     const isMounted = useRef(false);
 
-    // Sync input when URL param changes externally (e.g. browser back/forward or clear)
-    useEffect(() => {
-        setInputValue(paramQuery);
-    }, [paramQuery]);
+    // Sync input when the URL changes externally (back/forward, chip clear).
+    // Adjusting state during render (instead of in an effect) avoids an extra
+    // render pass. Compare trimmed values so our own debounced URL update
+    // doesn't strip a trailing space the user is still typing.
+    const [prevParamQuery, setPrevParamQuery] = useState(paramQuery);
+    if (paramQuery !== prevParamQuery) {
+        setPrevParamQuery(paramQuery);
+        if (paramQuery.trim() !== inputValue.trim()) {
+            setInputValue(paramQuery);
+        }
+    }
 
     const updateUrlQuery = useCallback(
-        (val: string) => {
+        (val: string, mode: "push" | "replace") => {
             const currentParams = new URLSearchParams(searchParams.toString());
             const trimmed = val.trim();
 
@@ -50,13 +56,10 @@ export function SearchBar({
             // Reset to page 1 whenever search query changes
             currentParams.delete("page");
 
-            const queryString = currentParams.toString();
-            const targetUrl = queryString ? `${ROUTES.SEARCH}?${queryString}` : ROUTES.SEARCH;
-
-            router.push(targetUrl);
+            setSearchUrl(currentParams, mode);
             onSearch?.(trimmed);
         },
-        [router, searchParams, onSearch],
+        [searchParams, onSearch],
     );
 
     // Debounced URL update when typing
@@ -73,7 +76,7 @@ export function SearchBar({
         }
 
         const timer = setTimeout(() => {
-            updateUrlQuery(inputValue);
+            updateUrlQuery(inputValue, "replace");
         }, debounceMs);
 
         return () => clearTimeout(timer);
@@ -81,12 +84,14 @@ export function SearchBar({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        updateUrlQuery(inputValue);
+        if (inputValue.trim() !== paramQuery.trim()) {
+            updateUrlQuery(inputValue, "push");
+        }
     };
 
     const handleClear = () => {
         setInputValue("");
-        updateUrlQuery("");
+        updateUrlQuery("", "push");
     };
 
     return (

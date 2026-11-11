@@ -1,14 +1,14 @@
 import type { ApiResponseType } from "@/types/api";
 
 export class ApiResponse {
-  static ok<T>(data: T, message?: string) {
+  static ok<T>(data: T, message?: string, headers?: HeadersInit) {
     return Response.json(
       {
         success: true,
         message,
         data,
       } satisfies ApiResponseType<T>, // `satisfies` checks that the object conforms to our API contract without trying to pass a type argument to Response.json().
-      { status: 200 }
+      { status: 200, headers }
     );
   }
 

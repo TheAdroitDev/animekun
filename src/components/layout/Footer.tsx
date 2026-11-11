@@ -9,7 +9,7 @@ const navigationLinks = [
         title: "Explore",
         links: [
             { label: "Trending", href: ROUTES.HOME },
-            { label: "Popular", href: `${ROUTES.SEARCH}?sort=popular` },
+            { label: "Popular", href: `${ROUTES.SEARCH}?sort=popularity` },
             { label: "Seasonal", href: ROUTES.HOME },
             { label: "Search & Filter", href: ROUTES.SEARCH },
         ],

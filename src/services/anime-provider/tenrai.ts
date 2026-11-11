@@ -16,6 +16,11 @@ import { ApiError } from "@/lib/utils/api-error";
 
 import { MemoryCache } from "./cache";
 
+// Supplementary data (characters, recommendations) gets a shorter timeout
+// than the default 10s: if Tenrai is slow, the section is skipped rather
+// than keeping its skeleton on screen.
+const SECONDARY_TIMEOUT_MS = 4_000;
+
 // Tenrai API response types
 
 interface TenraiPagination {
@@ -446,6 +451,7 @@ export class TenraiProvider implements AnimeProvider {
             const response =
                 await this.client.get<TenraiCharactersResponse>(
                     `/anime/${animeId}/characters`,
+                    { timeout: SECONDARY_TIMEOUT_MS },
                 );
 
             return response.data.data
@@ -485,6 +491,7 @@ export class TenraiProvider implements AnimeProvider {
             const response =
                 await this.client.get<TenraiRecommendationsResponse>(
                     `/anime/${animeId}/recommendations`,
+                    { timeout: SECONDARY_TIMEOUT_MS },
                 );
 
             return response.data.data

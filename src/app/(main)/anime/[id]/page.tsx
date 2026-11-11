@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -132,18 +132,16 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
 
     if (!isValidAnimeId(id)) notFound();
 
-    // Anime is critical; characters + recommendations are supplementary.
+    // Only the detail call blocks the page. Characters and recommendations
+    // stream in via <Suspense> below, so a slow secondary call no longer
+    // delays the whole page.
     // Only a real upstream 404 becomes notFound(). Outages/timeouts rethrow so
     // the error boundary renders and ISR keeps serving the last good page,
     // instead of telling Google the page doesn't exist.
-    const [anime, characters, recommendations] = await Promise.all([
-        getAnimeDetail(id).catch((error: unknown) => {
-            if (isUpstreamNotFound(error)) return null;
-            throw error;
-        }),
-        animeProvider.getCharacters(id).catch((): Character[] => []),
-        animeProvider.getRecommendations(id).catch((): Anime[] => []),
-    ]);
+    const anime = await getAnimeDetail(id).catch((error: unknown) => {
+        if (isUpstreamNotFound(error)) return null;
+        throw error;
+    });
 
     if (!anime) notFound();
 
@@ -190,15 +188,56 @@ export default async function AnimeDetailPage({ params }: AnimeDetailPageProps) 
                     infoItems={infoItems}
                 />
 
-                {/*  Characters  */}
-                <CharacterGrid characters={characters} />
+                {/*  Characters (streamed)  */}
+                <Suspense fallback={<SectionSkeleton />}>
+                    <CharactersSection id={id} />
+                </Suspense>
 
-                {/* ── Related & Recommendations ── */}
-                <RelatedAnime
-                    related={anime.relations}
-                    recommendations={recommendations}
-                />
+                {/* ── Related (already in the detail response) ── */}
+                <RelatedAnime related={anime.relations} />
+
+                {/* ── Recommendations (streamed) ── */}
+                <Suspense fallback={<SectionSkeleton />}>
+                    <RecommendationsSection id={id} />
+                </Suspense>
             </div>
         </section>
+    );
+}
+
+//  Streamed sections
+// Each fetches its own data. On failure/timeout they render nothing, so a
+// slow Tenrai call only affects its own section.
+
+async function CharactersSection({ id }: { id: string }) {
+    const characters = await animeProvider
+        .getCharacters(id)
+        .catch((): Character[] => []);
+
+    return <CharacterGrid characters={characters} />;
+}
+
+async function RecommendationsSection({ id }: { id: string }) {
+    const recommendations = await animeProvider
+        .getRecommendations(id)
+        .catch((): Anime[] => []);
+
+    return <RelatedAnime recommendations={recommendations} />;
+}
+
+function SectionSkeleton() {
+    return (
+        <div className="detail-block" aria-hidden="true">
+            <div className="detail-skeleton" style={{ width: 160, height: 22, marginBottom: 16 }} />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                {Array.from({ length: 6 }, (_, i) => (
+                    <div
+                        key={i}
+                        className="detail-skeleton"
+                        style={{ width: 120, height: 170, borderRadius: 12 }}
+                    />
+                ))}
+            </div>
+        </div>
     );
 }

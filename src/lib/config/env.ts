@@ -36,6 +36,11 @@ const serverEnvSchema = clientEnvSchema.extend({
     .url("BETTER_AUTH_URL must be a valid URL")
     .optional(),
 
+  // Google OAuth (optional): the provider is only enabled when both are set,
+  // so builds without credentials (preview, CI) still work.
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
   AI_API_KEY: z
     .string()
     .optional()

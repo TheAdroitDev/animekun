@@ -8,7 +8,6 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { FeedbackWidget } from "@/components/feedback";
-import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
 
@@ -33,18 +32,23 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
+        {/*
+          Blocking script: sets the theme BEFORE first paint (no flash).
+          Single source of truth for the initial theme. "light"/"dark" are
+          explicit choices (Navbar toggle); anything else ("system", missing,
+          legacy values) follows the OS preference.
+        */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                  } else {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                  }
-                } catch(e) {}
+                  var t = localStorage.getItem('theme');
+                  var dark = t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                  var root = document.documentElement;
+                  root.setAttribute('data-theme', dark ? 'dark' : 'light');
+                  root.style.colorScheme = dark ? 'dark' : 'light';
+                } catch (e) {}
               })();
             `,
           }}
@@ -56,14 +60,12 @@ export default function RootLayout({
           src="https://cloud.umami.is/script.js"
           data-website-id="0b1a8b08-63d1-42d8-a0f0-7d797044d5b6"
         />
-        <ThemeProvider>
-          <QueryProvider>
-            <Navbar />
-            <main className="page-content">{children}</main>
-            <Footer />
-            <FeedbackWidget />
-          </QueryProvider>
-        </ThemeProvider>
+        <QueryProvider>
+          <Navbar />
+          <main className="page-content">{children}</main>
+          <Footer />
+          <FeedbackWidget />
+        </QueryProvider>
          <SpeedInsights />
         <Analytics />
       </body>

@@ -43,6 +43,7 @@ export default function Navbar() {
     const toggleTheme = useCallback(() => {
         const next = isDark ? "light" : "dark";
         document.documentElement.setAttribute("data-theme", next);
+        document.documentElement.style.colorScheme = next; // match the head script in layout.tsx
         localStorage.setItem("theme", next);
         setIsDark(!isDark);
     }, [isDark]);

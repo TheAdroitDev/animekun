@@ -4,6 +4,10 @@ import { nextCookies } from "better-auth/next-js";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import {
+    PASSWORD_MAX_LENGTH,
+    PASSWORD_MIN_LENGTH,
+} from "@/modules/auth/validations/auth-schema";
 
 /**
  * Better Auth — single file for config + instance (server only).
@@ -32,7 +36,9 @@ export const auth = betterAuth({
 
     emailAndPassword: {
         enabled: true,
-        minPasswordLength: 8,
+        // Same limits as the signup form (modules/auth/validations)
+        minPasswordLength: PASSWORD_MIN_LENGTH,
+        maxPasswordLength: PASSWORD_MAX_LENGTH,
         autoSignIn: true, // log in right after signup
         // requireEmailVerification stays off: no email sending yet
     },

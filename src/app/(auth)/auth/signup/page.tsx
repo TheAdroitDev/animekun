@@ -4,6 +4,7 @@ import { ROUTES } from "@/lib/constants/route";
 import { AuthCard } from "@/modules/auth/components/AuthCard";
 import { AuthSwitchLink } from "@/modules/auth/components/AuthSwitchLink";
 import { SignupForm } from "@/modules/auth/components/SignupForm";
+import { SocialButtons } from "@/modules/auth/components/SocialButtons";
 
 // Static page: no session check here (that would make it dynamic).
 // Logged-in users are redirected away by the proxy in step 6.9.
@@ -28,6 +29,7 @@ export default function SignupPage() {
             }
         >
             <SignupForm />
+            <SocialButtons />
         </AuthCard>
     );
 }

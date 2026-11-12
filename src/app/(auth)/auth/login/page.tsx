@@ -4,6 +4,8 @@ import { ROUTES } from "@/lib/constants/route";
 import { AuthCard } from "@/modules/auth/components/AuthCard";
 import { AuthSwitchLink } from "@/modules/auth/components/AuthSwitchLink";
 import { LoginForm } from "@/modules/auth/components/LoginForm";
+import { OAuthErrorMessage } from "@/modules/auth/components/OAuthErrorMessage";
+import { SocialButtons } from "@/modules/auth/components/SocialButtons";
 
 // Static page: no session check here (that would make it dynamic).
 export const metadata: Metadata = {
@@ -25,7 +27,9 @@ export default function LoginPage() {
                 />
             }
         >
+            <OAuthErrorMessage />
             <LoginForm />
+            <SocialButtons />
         </AuthCard>
     );
 }

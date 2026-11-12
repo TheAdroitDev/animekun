@@ -11,13 +11,29 @@ import {
     Cancel01Icon,
 } from "@hugeicons/core-free-icons";
 import { ROUTES } from "@/lib/constants/route";
+import { UserMenu } from "@/modules/auth/components/UserMenu";
 
+/**
+ * Both icons are rendered; CSS shows the right one per [data-theme]
+ * (set before first paint by the head script), so the icon is correct
+ * immediately instead of swapping after hydration.
+ */
+function ThemeIcons() {
+    return (
+        <>
+            <HugeiconsIcon icon={Sun01Icon} size={18} strokeWidth={1.8} className="theme-icon-sun" />
+            <HugeiconsIcon icon={Moon02Icon} size={18} strokeWidth={1.8} className="theme-icon-moon" />
+        </>
+    );
+}
+
+// Quiz and Bookmarks are hidden until their pages exist (Phases 9 and 7):
+// links to 404s on every page hurt visitors and SEO. Add them back then.
 const navLinks = [
     { label: "World", href: ROUTES.HOME },
     { label: "Search", href: ROUTES.SEARCH },
-    { label: "Quiz", href: ROUTES.DASHBOARD.QUIZ },
-    { label: "Town Hall", href: "#town-hall" },
-    { label: "Bookmarks", href: ROUTES.DASHBOARD.BOOKMARKS },
+    // "/#town-hall" (not "#town-hall") so it also works from other pages
+    { label: "Town Hall", href: "/#town-hall" },
 ];
 
 export default function Navbar() {
@@ -105,16 +121,10 @@ export default function Navbar() {
                             aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
                             title={isDark ? "Light mode" : "Dark mode"}
                         >
-                            <HugeiconsIcon
-                                icon={isDark ? Sun01Icon : Moon02Icon}
-                                size={18}
-                                strokeWidth={1.8}
-                            />
+                            <ThemeIcons />
                         </button>
 
-                        <Link href={ROUTES.AUTH.LOGIN} className="navbar-login-btn">
-                            Login
-                        </Link>
+                        <UserMenu variant="navbar" />
                     </div>
 
                     {/* ── Mobile Hamburger ── */}
@@ -206,23 +216,13 @@ export default function Navbar() {
                             alignItems: "center",
                         }}
                     >
-                        <HugeiconsIcon
-                            icon={isDark ? Sun01Icon : Moon02Icon}
-                            size={18}
-                            strokeWidth={1.8}
-                        />
+                        <ThemeIcons />
                         <span style={{ fontSize: "13px", fontWeight: 500 }}>
                             {isDark ? "Light mode" : "Dark mode"}
                         </span>
                     </button>
 
-                    <Link
-                        href={ROUTES.AUTH.LOGIN}
-                        className="navbar-login-btn navbar-login-btn-full"
-                        onClick={() => setMobileOpen(false)}
-                    >
-                        Login
-                    </Link>
+                    <UserMenu variant="drawer" onAction={() => setMobileOpen(false)} />
                 </div>
             </aside>
         </>

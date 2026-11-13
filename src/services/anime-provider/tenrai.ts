@@ -1,6 +1,7 @@
 import axios, {
     AxiosError,
     type AxiosInstance,
+    type InternalAxiosRequestConfig,
 } from "axios";
 
 import type { AnimeProvider } from "./provider";
@@ -213,6 +214,20 @@ export class TenraiProvider implements AnimeProvider {
         });
 
         this.cache = new MemoryCache();
+
+        // Tenrai rate limit (429): wait what it asks for (max 1s) and retry
+        // ONCE. Absorbs short bursts (e.g. a crawler opening many uncached
+        // anime pages). Waiting is I/O, not billed as Active CPU on Vercel.
+        this.client.interceptors.response.use(undefined, async (error: AxiosError) => {
+            const config = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;
+            if (error.response?.status !== 429 || !config || config._retried) throw error;
+
+            config._retried = true;
+            const retryAfterSec = Number(error.response.headers["retry-after"]);
+            const waitMs = retryAfterSec > 0 ? Math.min(retryAfterSec * 1000, 1000) : 1000;
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+            return this.client.request(config);
+        });
     }
 
     // Search

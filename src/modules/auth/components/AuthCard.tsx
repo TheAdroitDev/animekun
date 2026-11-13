@@ -6,12 +6,15 @@ interface AuthCardProps {
     children: ReactNode;
     /** Rendered below the form, e.g. the login/signup switch link. */
     footer?: ReactNode;
+    /** Full-bleed decorative layer behind the card (e.g. LoginBackdrop). */
+    backdrop?: ReactNode;
 }
 
-/** Shared card layout for the login and signup pages. */
-export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
+/** Shared card layout for the auth pages. */
+export function AuthCard({ title, subtitle, children, footer, backdrop }: AuthCardProps) {
     return (
-        <section className="auth-section">
+        <section className={backdrop ? "auth-section auth-section--immersive" : "auth-section"}>
+            {backdrop}
             <div className="auth-card">
                 <div className="auth-header">
                     <h1 className="auth-title">{title}</h1>

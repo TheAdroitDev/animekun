@@ -20,9 +20,13 @@ export function GoogleSignInButton() {
         setError(null);
         setIsRedirecting(true);
 
+        // ?welcome= tells WelcomeCelebration which surprise to play
+        // (Better Auth sends brand-new accounts to newUserCallbackURL).
+        const redirect = getRedirectFromLocation();
         const { error } = await signIn.social({
             provider: "google",
-            callbackURL: getRedirectFromLocation(),
+            callbackURL: withWelcomeFlag(redirect, "back"),
+            newUserCallbackURL: withWelcomeFlag(redirect, "new"),
             errorCallbackURL: ROUTES.AUTH.LOGIN,
         });
 
@@ -52,6 +56,13 @@ export function GoogleSignInButton() {
             )}
         </div>
     );
+}
+
+/** Adds ?welcome=new|back to a same-site path (keeps its own query/hash). */
+function withWelcomeFlag(path: string, value: "new" | "back") {
+    const url = new URL(path, window.location.origin);
+    url.searchParams.set("welcome", value);
+    return url.pathname + url.search + url.hash;
 }
 
 /** Google's standard multicolor "G" (per Google sign-in branding guidelines). */

@@ -18,7 +18,7 @@ export default function Hero() {
                 <div className="hero-badge-wrapper">
                     <div className="hero-badge">
                         <HugeiconsIcon icon={SparklesIcon} size={14} strokeWidth={1.8} />
-                        <span>Search is back, and faster Guys ⚡</span>
+                        <span>You can now LOGIN guys and search is also back 🤩</span>
                     </div>
                 </div>
 

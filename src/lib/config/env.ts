@@ -45,6 +45,14 @@ const serverEnvSchema = clientEnvSchema.extend({
     .string()
     .optional()
     .default(""),
+
+  // The only account allowed on /admin. Unset = admin page is off (404).
+  ADMIN_EMAIL: z
+    .string()
+    .email("ADMIN_EMAIL must be a valid email")
+    .or(z.literal(""))
+    .optional()
+    .default(""),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

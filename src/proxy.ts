@@ -32,5 +32,6 @@ export const config = {
         "/generate/:path*",
         "/quiz/:path*",
         "/chat/:path*",
+        "/admin/:path*",
     ],
 };

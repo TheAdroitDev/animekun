@@ -16,4 +16,5 @@ export const authClient = createAuthClient({
     },
 });
 
-export const { signIn, signUp, signOut, useSession } = authClient;
+// Google-only sign-in: no signUp export (first Google sign-in creates the account).
+export const { signIn, signOut, useSession } = authClient;

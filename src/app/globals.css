@@ -2334,6 +2334,43 @@ button {
   opacity: 0.9;
 }
 
+/* Logged in: bookmarks "coming soon" */
+.bookmark-soon-badge {
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.bookmark-soon-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bookmark-soon-icon {
+  color: var(--accent);
+  animation: bookmark-hammer 1.2s ease-in-out 2;
+  transform-origin: 80% 80%;
+}
+
+@keyframes bookmark-hammer {
+  0%, 100% { transform: rotate(0); }
+  30% { transform: rotate(-25deg); }
+  50% { transform: rotate(8deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bookmark-soon-icon {
+    animation: none;
+  }
+}
+
 /* Section blocks */
 .detail-block {
   display: flex;
@@ -5903,5 +5940,110 @@ input[type="search"]::-webkit-search-results-decoration {
   .admin-link,
   .admin-link-arrow {
     transition: none;
+  }
+}
+
+/* ───────────────────────────────────────────────
+   Welcome celebration (after Google sign-in)
+   ─────────────────────────────────────────────── */
+.welcome-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.welcome-particle {
+  position: absolute;
+  top: -24px;
+  left: var(--x);
+  width: var(--s);
+  height: calc(var(--s) * 0.55);
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0;
+  animation-name: welcome-fall;
+  animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+  animation-fill-mode: forwards;
+}
+
+/* Sakura petal */
+.welcome-particle--petal {
+  height: var(--s);
+  border-radius: 100% 0 100% 0;
+  background: #f9a8d4;
+}
+
+@keyframes welcome-fall {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), 105vh) rotate(var(--spin));
+  }
+}
+
+.welcome-toast {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  z-index: 101;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 32px);
+  padding: 12px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  box-shadow: 0 16px 40px -12px rgba(230, 59, 46, 0.45);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  animation: welcome-toast 4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.welcome-toast-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.welcome-toast-sub {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+@keyframes welcome-toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -14px) scale(0.95);
+  }
+  10%,
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-fx {
+    display: none;
+  }
+
+  .welcome-toast {
+    animation: none;
+    transform: translateX(-50%);
   }
 }

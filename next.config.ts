@@ -17,6 +17,13 @@ const nextConfig: NextConfig = {
     async headers() {
         return [{ source: "/:path*", headers: securityHeaders }];
     },
+    // Google-only sign-in: there's no separate signup page anymore (first
+    // Google sign-in creates the account). Keeps old links working; the
+    // query (e.g. ?redirect=) is passed through. Handled by Vercel routing,
+    // so it costs no function invocation.
+    async redirects() {
+        return [{ source: "/auth/signup", destination: "/auth/login", permanent: true }];
+    },
     images: {
         remotePatterns: [
             {

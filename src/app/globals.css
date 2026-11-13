@@ -4577,6 +4577,187 @@ input[type="search"]::-webkit-search-results-decoration {
   cursor: not-allowed;
 }
 
+/* Auth — immersive variant: full-height section, decorative layer behind
+   a frosted-glass card (login page dome) */
+.auth-section--immersive {
+  position: relative;
+  isolation: isolate;
+  align-items: center;
+  min-height: calc(100svh - 64px); /* 64px = fixed navbar (.page-content) */
+  padding: 32px 16px;
+  overflow: hidden;
+}
+
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  animation: auth-backdrop-in 0.8s ease both;
+}
+
+@keyframes auth-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.auth-section--immersive .auth-card {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-backdrop {
+    animation: none;
+  }
+}
+
+/* ───────────────────────────────────────────────
+   DomeGallery — draggable 3D poster dome (components/effects)
+   Vars set by the component: --dome-radius (ResizeObserver),
+   --dome-segments, --dome-bg, --dome-tile-radius, --dome-img-filter.
+   ─────────────────────────────────────────────── */
+.dome {
+  --dome-radius: 520px;
+  --dome-circ: calc(var(--dome-radius) * 3.14);
+  --dome-rot: calc((360deg / var(--dome-segments)) / 2);
+  --dome-cell: calc(var(--dome-circ) / var(--dome-segments));
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.dome *,
+.dome *::before,
+.dome *::after {
+  box-sizing: border-box;
+}
+
+.dome-viewport {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--dome-bg);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+/* Touch: vertical swipes keep scrolling the page, horizontal ones spin */
+@media (pointer: coarse) {
+  .dome-viewport {
+    touch-action: pan-y;
+  }
+}
+
+.dome[data-dragging] .dome-viewport {
+  cursor: grabbing;
+}
+
+.dome-stage {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  perspective: calc(var(--dome-radius) * 2);
+  perspective-origin: 50% 50%;
+  contain: layout paint size;
+}
+
+.dome-sphere,
+.dome-item,
+.dome-tile {
+  transform-style: preserve-3d;
+}
+
+.dome-sphere {
+  transform: translateZ(calc(var(--dome-radius) * -1));
+  will-change: transform;
+}
+
+/* Each tile spans 2×2 grid cells; +0.5 / −0.5 centres it on its cell pair */
+.dome-item {
+  position: absolute;
+  inset: -999px;
+  width: calc(var(--dome-cell) * 2);
+  height: calc(var(--dome-cell) * 2);
+  margin: auto;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  transform:
+    rotateY(calc(var(--dome-rot) * (var(--dome-x) + 0.5)))
+    rotateX(calc(var(--dome-rot) * (var(--dome-y) - 0.5)))
+    translateZ(var(--dome-radius));
+}
+
+.dome-tile {
+  position: absolute;
+  inset: 10px;
+  overflow: hidden;
+  border-radius: var(--dome-tile-radius);
+  background: var(--bg-secondary);
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: transform 0.3s ease;
+}
+
+.dome-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  backface-visibility: hidden;
+  filter: var(--dome-img-filter);
+}
+
+/* Micro-interaction: hovered poster grows (mouse only, not mid-drag) */
+@media (hover: hover) {
+  .dome:not([data-dragging]) .dome-tile:hover {
+    transform: translateZ(0) scale(1.06);
+  }
+}
+
+.dome-vignette,
+.dome-fade {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.dome-vignette {
+  inset: 0;
+  background: radial-gradient(transparent 65%, var(--dome-bg) 100%);
+}
+
+.dome-fade {
+  left: 0;
+  right: 0;
+  height: 120px;
+}
+
+.dome-fade--top {
+  top: 0;
+  background: linear-gradient(to top, transparent, var(--dome-bg));
+}
+
+.dome-fade--bottom {
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent, var(--dome-bg));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dome-tile {
+    transition: none;
+  }
+}
+
 /* ───────────────────────────────────────────────
    Navbar — theme icons (CSS-driven, correct on first paint)
    ─────────────────────────────────────────────── */

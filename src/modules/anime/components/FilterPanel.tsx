@@ -1,9 +1,22 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { RotateCcw, Check, Filter, ChevronDown, ChevronUp } from "lucide-react";
+import {
+    RotateCcw,
+    Check,
+    Filter,
+    ChevronDown,
+    ChevronUp,
+    ArrowUpDown,
+    Star,
+    Flame,
+    CalendarDays,
+    ArrowDownAZ,
+} from "lucide-react";
 
+import { DateRangePicker } from "@/components/shared/DateRangePicker";
+import { Select, type SelectOption } from "@/components/shared/Select";
 import { GENRES } from "@/lib/constants/genres";
 import { setSearchUrl } from "@/modules/anime/utils/search-url";
 import {
@@ -46,6 +59,22 @@ function readUrlDraft(sp: URLSearchParams): DraftState {
     };
 }
 
+// Visuals for the custom dropdowns (labels/values stay in search-filters.ts)
+const SORT_ICONS: Record<string, ReactNode> = {
+    "": <ArrowUpDown size={14} />,
+    score: <Star size={14} />,
+    popularity: <Flame size={14} />,
+    date: <CalendarDays size={14} />,
+    title: <ArrowDownAZ size={14} />,
+};
+
+const SORT_SELECT_OPTIONS: SelectOption[] = SORT_OPTIONS.map((o) => ({ ...o, icon: SORT_ICONS[o.value] }));
+
+const STATUS_SELECT_OPTIONS: SelectOption[] = STATUS_OPTIONS.map((o) => ({
+    ...o,
+    icon: <span className={`status-dot status-dot--${o.value || "all"}`} />,
+}));
+
 function FilterSelect({
     id,
     label,
@@ -57,27 +86,15 @@ function FilterSelect({
     label: string;
     value: string;
     onChange: (v: string) => void;
-    options: readonly { label: string; value: string }[];
+    options: readonly SelectOption[];
 }) {
+    const labelId = `${id}-label`;
     return (
         <div className="top-filter-field">
-            <label htmlFor={id} className="top-filter-label">
+            <label id={labelId} htmlFor={id} className="top-filter-label">
                 {label}
             </label>
-            <div className="top-filter-select-wrapper">
-                <select
-                    id={id}
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    className="top-filter-select"
-                >
-                    {options.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-            </div>
+            <Select id={id} labelId={labelId} value={value} onChange={onChange} options={options} />
         </div>
     );
 }
@@ -281,7 +298,7 @@ export function FilterPanel({ className = "", isOpen = true, onToggle, onApply }
                             label="Sort By"
                             value={draft.sort}
                             onChange={(v) => updateDraft("sort", v)}
-                            options={SORT_OPTIONS}
+                            options={SORT_SELECT_OPTIONS}
                         />
 
                         <FilterSelect
@@ -289,13 +306,13 @@ export function FilterPanel({ className = "", isOpen = true, onToggle, onApply }
                             label="Status"
                             value={draft.status}
                             onChange={(v) => updateDraft("status", v)}
-                            options={STATUS_OPTIONS}
+                            options={STATUS_SELECT_OPTIONS}
                         />
 
                         {/* Release Timing (Year vs Date Range) */}
                         <div className="top-filter-field timing-field">
                             <div className="top-filter-label-row">
-                                <span className="top-filter-label">Release Timing</span>
+                                <span id="filter-timing-label" className="top-filter-label">Release Timing</span>
                                 <div className="timing-mode-toggle">
                                     {(["year", "range"] as const).map((mode) => (
                                         <button
@@ -311,45 +328,25 @@ export function FilterPanel({ className = "", isOpen = true, onToggle, onApply }
                             </div>
 
                             {timingMode === "year" ? (
-                                <div className="top-filter-select-wrapper">
-                                    <select
-                                        id="filter-year-select"
-                                        value={draft.year}
-                                        onChange={(e) => updateDraft("year", e.target.value)}
-                                        className="top-filter-select"
-                                    >
-                                        {YEAR_OPTIONS.map((opt) => (
-                                            <option key={opt.value} value={opt.value}>
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <Select
+                                    id="filter-year-select"
+                                    labelId="filter-timing-label"
+                                    value={draft.year}
+                                    onChange={(v) => updateDraft("year", v)}
+                                    options={YEAR_OPTIONS}
+                                />
                             ) : (
                                 <div className="timing-range-wrapper">
-                                    <div className="timing-range-inputs">
-                                        <input
-                                            type="date"
-                                            value={draft.startDate}
-                                            min="1900-01-01"
-                                            max={draft.endDate || "2100-12-31"}
-                                            onChange={(e) => updateDraft("startDate", e.target.value)}
-                                            className={`top-filter-date-input ${isDateRangeInvalid ? "input-error" : ""}`}
-                                            aria-label="Start date"
-                                            aria-invalid={isDateRangeInvalid}
-                                        />
-                                        <span className="timing-range-separator">to</span>
-                                        <input
-                                            type="date"
-                                            value={draft.endDate}
-                                            min={draft.startDate || "1900-01-01"}
-                                            max="2100-12-31"
-                                            onChange={(e) => updateDraft("endDate", e.target.value)}
-                                            className={`top-filter-date-input ${isDateRangeInvalid ? "input-error" : ""}`}
-                                            aria-label="End date"
-                                            aria-invalid={isDateRangeInvalid}
-                                        />
-                                    </div>
+                                    <DateRangePicker
+                                        id="filter-date-range"
+                                        labelId="filter-timing-label"
+                                        startDate={draft.startDate}
+                                        endDate={draft.endDate}
+                                        onChange={({ startDate, endDate }) =>
+                                            setDraft((prev) => ({ ...prev, startDate, endDate }))
+                                        }
+                                        invalid={isDateRangeInvalid}
+                                    />
                                     {isDateRangeInvalid && (
                                         <span className="top-filter-field-error" role="alert">
                                             Start date cannot be after end date

@@ -36,7 +36,9 @@ function getOAuthErrorMessage(error: string | null): string | null {
     const code = error.toLowerCase().replace(/[\s-]+/g, "_");
 
     if (code === "account_not_linked") {
-        return "This email is already registered with a password. Log in with your password instead.";
+        // Only possible for leftover accounts from before Google-only sign-in.
+        // Don't tell people to use a password: they may never have set one.
+        return "This email belongs to an older account that can't use Google sign-in yet. Please contact support.";
     }
     // User cancelled on Google's screen: not an error worth showing.
     if (code === "access_denied") return null;

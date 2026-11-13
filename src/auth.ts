@@ -4,10 +4,6 @@ import { nextCookies } from "better-auth/next-js";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
-import {
-    PASSWORD_MAX_LENGTH,
-    PASSWORD_MIN_LENGTH,
-} from "@/modules/auth/validations/auth-schema";
 
 /**
  * Better Auth — single file for config + instance (server only).
@@ -35,25 +31,26 @@ export const auth = betterAuth({
     },
     account: {
         fields: { accountId: "providerAccountId" },
-        // Encrypt OAuth access/refresh/id tokens at rest with BETTER_AUTH_SECRET.
+        // Encrypt OAuth access + refresh tokens at rest with BETTER_AUTH_SECRET.
+        // Note: Better Auth does NOT encrypt id_token (stored as-is).
         // We never call Google APIs, so a secret rotation losing old tokens is fine.
         encryptOAuthTokens: true,
     },
 
+    // Google-only sign-in. Email/password is OFF on purpose: Google verifies
+    // every email, so nobody can register someone else's address (email
+    // squatting), there are no passwords to brute-force or leak, and we
+    // never need email verification / password-reset infrastructure.
+    // With this off, Better Auth rejects /sign-up/email and /sign-in/email
+    // server-side (400), even if called directly.
     emailAndPassword: {
-        enabled: true,
-        // Same limits as the signup form (modules/auth/validations)
-        minPasswordLength: PASSWORD_MIN_LENGTH,
-        maxPasswordLength: PASSWORD_MAX_LENGTH,
-        autoSignIn: true, // log in right after signup
-        // requireEmailVerification stays off: no email sending yet
+        enabled: false,
     },
 
     // Google is enabled only when both credentials are set (see env.ts).
-    // Account linking keeps Better Auth's default requireLocalEmailVerified:
-    // Google is NOT linked to an existing password account with an
-    // unverified email (prevents pre-account takeover while we have no
-    // email verification). Users get "account_not_linked" instead.
+    // Account linking keeps Better Auth's default requireLocalEmailVerified,
+    // so Google never links into a leftover unverified password account
+    // (those get "account_not_linked" instead).
     socialProviders: {
         ...(googleClientId &&
             googleClientSecret && {

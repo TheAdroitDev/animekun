@@ -1,35 +1,25 @@
 import type { Metadata } from "next";
 
-import { ROUTES } from "@/lib/constants/route";
 import { AuthCard } from "@/modules/auth/components/AuthCard";
-import { AuthSwitchLink } from "@/modules/auth/components/AuthSwitchLink";
-import { LoginForm } from "@/modules/auth/components/LoginForm";
+import { GoogleSignInButton } from "@/modules/auth/components/GoogleSignInButton";
 import { OAuthErrorMessage } from "@/modules/auth/components/OAuthErrorMessage";
-import { SocialButtons } from "@/modules/auth/components/SocialButtons";
 
 // Static page: no session check here (that would make it dynamic).
+// Google-only: first sign-in creates the account (/auth/signup redirects here).
 export const metadata: Metadata = {
-    title: "Log in | AnimeKun",
-    description: "Log in to your AnimeKun account.",
+    title: "Sign in | AnimeKun",
+    description: "Sign in to AnimeKun with Google.",
     robots: { index: false, follow: true },
 };
 
 export default function LoginPage() {
     return (
         <AuthCard
-            title="Welcome back"
-            subtitle="Log in to see your bookmarks, quizzes and recommendations."
-            footer={
-                <AuthSwitchLink
-                    prompt="Don't have an account?"
-                    linkText="Sign up"
-                    href={ROUTES.AUTH.SIGNUP}
-                />
-            }
+            title="Welcome to AnimeKun"
+            subtitle="Sign in with Google to save bookmarks, take quizzes and get recommendations. New here? Your account is created automatically."
         >
             <OAuthErrorMessage />
-            <LoginForm />
-            <SocialButtons />
+            <GoogleSignInButton />
         </AuthCard>
     );
 }

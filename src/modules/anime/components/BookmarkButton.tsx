@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bookmark, ChevronDown, Hammer, LogIn } from "lucide-react";
 
+import { trackEvent } from "@/components/analytics/TracwellAnalytics";
 import { useSession } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/constants/route";
 
@@ -46,7 +47,15 @@ export function BookmarkButton({ animeId }: BookmarkButtonProps) {
             <button
                 type="button"
                 className="bookmark-btn bookmark-btn-unauth"
-                onClick={() => setIsOpen((prev) => !prev)}
+                onClick={() => {
+                    if (!isOpen) {
+                        trackEvent("bookmark_clicked", {
+                            anime_id: animeId,
+                            state: session ? "coming_soon" : "login_prompt",
+                        });
+                    }
+                    setIsOpen((prev) => !prev);
+                }}
                 aria-expanded={isOpen}
             >
                 <Bookmark size={16} className="bookmark-icon" />

@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { PartyPopper } from "lucide-react";
 
+import { trackEvent } from "@/components/analytics/TracwellAnalytics";
 import { useSession } from "@/lib/auth-client";
 
 /**
@@ -59,6 +60,7 @@ export function WelcomeCelebration() {
 
     useEffect(() => {
         if (!kind) return;
+        trackEvent(kind === "new" ? "sign_up_completed" : "sign_in_completed", { provider: "google" });
         const url = new URL(window.location.href);
         url.searchParams.delete("welcome");
         window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);

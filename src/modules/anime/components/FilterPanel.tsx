@@ -15,6 +15,7 @@ import {
     ArrowDownAZ,
 } from "lucide-react";
 
+import { trackEvent } from "@/components/analytics/TracwellAnalytics";
 import { DateRangePicker } from "@/components/shared/DateRangePicker";
 import { Select, type SelectOption } from "@/components/shared/Select";
 import { GENRES } from "@/lib/constants/genres";
@@ -228,6 +229,14 @@ export function FilterPanel({ className = "", isOpen = true, onToggle, onApply }
         next.delete("page");
 
         setSearchUrl(next, "push");
+
+        const hasRange = timingMode === "range" && Boolean(draft.startDate || draft.endDate);
+        trackEvent("search_filters_applied", {
+            genre_count: draft.genres.size,
+            timing: timingMode === "year" && draft.year ? "year" : hasRange ? "range" : "none",
+            has_status: Boolean(draft.status),
+            sort: draft.sort || "default",
+        });
 
         // Auto-collapse filter options after applying so the anime results are immediately visible
         if (onApply) {

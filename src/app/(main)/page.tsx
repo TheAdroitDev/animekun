@@ -2,6 +2,7 @@ import Hero from "@/components/home/Hero";
 import GenerateSection from "@/components/home/GenerateSection";
 import QuizSection from "@/components/home/QuizSection";
 import TownHallSection from "@/components/home/TownHallSection";
+import { VillageScene } from "@/components/effects/VillageScene";
 import { SectionHeader } from "@/components/shared";
 import { ROUTES } from "@/lib/constants/route";
 import {
@@ -45,6 +46,15 @@ export default function Home() {
                 </section>
             </div>
             <TownHallSection />
+
+            {/* Closing scene: ink village (lazy, loads near the bottom only) */}
+            <section className="village-section" aria-label="Closing scene">
+                <div className="village-section-head">
+                    <p className="village-section-kicker">おやすみ</p>
+                    <p className="village-section-title">See you next episode ✌🏻</p>
+                </div>
+                <VillageScene />
+            </section>
         </div>
     );
 }

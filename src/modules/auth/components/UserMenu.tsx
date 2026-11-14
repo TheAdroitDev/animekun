@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { signOut, useSession } from "@/lib/auth-client";
+import { resetAnalyticsIdentity, trackEvent } from "@/components/analytics/TracwellAnalytics";
 import { ROUTES } from "@/lib/constants/route";
 
 interface UserMenuProps {
@@ -29,6 +30,8 @@ export function UserMenu({ variant, onAction }: UserMenuProps) {
     const handleSignOut = async () => {
         onAction?.();
         await signOut();
+        trackEvent("sign_out_completed");
+        resetAnalyticsIdentity();
         // Stay on the page; protected pages (step 6.9) re-check on refresh.
         router.refresh();
     };

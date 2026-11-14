@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored line-art village scene (MIT); not written to our lint rules
+    "src/components/effects/line-art/village/**",
   ]),
 ]);
 

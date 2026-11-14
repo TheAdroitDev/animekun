@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { trackEvent } from "@/components/analytics/TracwellAnalytics";
 import { signIn } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/constants/route";
 import { getRedirectFromLocation } from "@/modules/auth/utils/safe-redirect";
@@ -19,6 +20,7 @@ export function GoogleSignInButton() {
     const handleGoogle = async () => {
         setError(null);
         setIsRedirecting(true);
+        trackEvent("sign_in_started", { provider: "google" });
 
         // ?welcome= tells WelcomeCelebration which surprise to play
         // (Better Auth sends brand-new accounts to newUserCallbackURL).

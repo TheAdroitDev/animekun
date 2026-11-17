@@ -13,6 +13,8 @@ export type {
 export { setBookmarkStatusAction } from "./actions/set-bookmark-status";
 export { removeBookmarkAction } from "./actions/remove-bookmark";
 
+export { BookmarkErrorMessage } from "./components/BookmarkErrorMessage";
+
 export {
     BookmarkActionError,
     useBookmarkStatuses,

@@ -51,7 +51,7 @@ export default function Home() {
             <section className="village-section" aria-label="Closing scene">
                 <div className="village-section-head">
                     <p className="village-section-kicker">おやすみ</p>
-                    <p className="village-section-title">See you next episode ✌🏻</p>
+                    <p className="village-section-title">Tadaima  ✌🏻</p>
                 </div>
                 <VillageScene />
             </section>

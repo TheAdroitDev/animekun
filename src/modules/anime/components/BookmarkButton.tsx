@@ -11,6 +11,7 @@ import {
     BOOKMARK_STATUSES,
     BOOKMARK_STATUS_LABELS,
     BookmarkActionError,
+    BookmarkErrorMessage,
     useBookmarkStatuses,
     useRemoveBookmark,
     useSetBookmarkStatus,
@@ -70,19 +71,21 @@ export function BookmarkButton({ animeId, title, posterUrl }: BookmarkButtonProp
     const loginHref = `${ROUTES.AUTH.LOGIN}?redirect=${encodeURIComponent(ROUTES.ANIME_DETAIL(animeId))}`;
     const current: BookmarkStatus | undefined = statusMap?.[animeId];
 
-    const handleError = (e: Error) => setError(e instanceof BookmarkActionError ? e.code : "server");
+    // mutateAsync + catch: TanStack fires per-call mutate() callbacks only
+    // for the last call, so a quick second click could swallow an error.
+    const handleError = (e: unknown) => setError(e instanceof BookmarkActionError ? e.code : "server");
 
     function chooseStatus(status: BookmarkStatus) {
         setIsOpen(false);
         setError(null);
         if (status === current) return;
-        setStatus.mutate({ animeId, status, title, posterUrl }, { onError: handleError });
+        setStatus.mutateAsync({ animeId, status, title, posterUrl }).catch(handleError);
     }
 
     function removeFromList() {
         setIsOpen(false);
         setError(null);
-        remove.mutate({ animeId }, { onError: handleError });
+        remove.mutateAsync({ animeId }).catch(handleError);
     }
 
     function toggleMenu() {
@@ -172,19 +175,7 @@ export function BookmarkButton({ animeId, title, posterUrl }: BookmarkButtonProp
                 </div>
             )}
 
-            {error && (
-                <p className="bookmark-error" role="alert">
-                    {error === "unauthorized" ? (
-                        <>
-                            Your session expired. <Link href={loginHref}>Sign in again</Link>.
-                        </>
-                    ) : error === "limit" ? (
-                        "You've reached the 2000 bookmark limit."
-                    ) : (
-                        "Couldn't save that. Please try again."
-                    )}
-                </p>
-            )}
+            {error && <BookmarkErrorMessage error={error} loginHref={loginHref} />}
         </div>
     );
 }

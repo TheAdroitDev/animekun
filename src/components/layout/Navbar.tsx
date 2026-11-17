@@ -10,6 +10,7 @@ import {
     Menu01Icon,
     Cancel01Icon,
 } from "@hugeicons/core-free-icons";
+import { useSession } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/constants/route";
 import { UserMenu } from "@/modules/auth/components/UserMenu";
 
@@ -27,16 +28,24 @@ function ThemeIcons() {
     );
 }
 
-// Quiz and Bookmarks are hidden until their pages exist (Phases 9 and 7):
-// links to 404s on every page hurt visitors and SEO. Add them back then.
-const navLinks = [
+// Quiz is hidden until its page exists (Phase 9): links to 404s on every
+// page hurt visitors and SEO. Add it back then.
+const navLinks: { label: string; href: string; prefetch?: false }[] = [
     { label: "World", href: ROUTES.HOME },
     { label: "Search", href: ROUTES.SEARCH },
     // "/#town-hall" (not "#town-hall") so it also works from other pages
     { label: "Town Hall", href: "/#town-hall" },
 ];
 
+// Signed-in only: for everyone else (and Google) it would just redirect to
+// login. prefetch={false}: /bookmarks is dynamic, so prefetching it would
+// run a server function on every page view.
+const bookmarksLink = { label: "Bookmarks", href: ROUTES.DASHBOARD.BOOKMARKS, prefetch: false as const };
+
 export default function Navbar() {
+    // Same shared session state as UserMenu: no extra request.
+    const { data: session } = useSession();
+    const links = session ? [...navLinks, bookmarksLink] : navLinks;
     const [mobileOpen, setMobileOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [isDark, setIsDark] = useState(false);
@@ -104,9 +113,9 @@ export default function Navbar() {
 
                     {/* ── Desktop Links ── */}
                     <ul className="navbar-links">
-                        {navLinks.map((link) => (
+                        {links.map((link) => (
                             <li key={link.href}>
-                                <Link href={link.href} className="navbar-link">
+                                <Link href={link.href} prefetch={link.prefetch} className="navbar-link">
                                     <span className="navbar-link-label">{link.label}</span>
                                 </Link>
                             </li>
@@ -190,10 +199,11 @@ export default function Navbar() {
                 </div>
 
                 <ul className="navbar-drawer-links">
-                    {navLinks.map((link, i) => (
+                    {links.map((link, i) => (
                         <li key={link.href} style={{ animationDelay: `${i * 50}ms` }}>
                             <Link
                                 href={link.href}
+                                prefetch={link.prefetch}
                                 className="navbar-drawer-link"
                                 onClick={() => setMobileOpen(false)}
                             >

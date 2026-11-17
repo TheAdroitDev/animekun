@@ -2541,6 +2541,41 @@ button {
   border-color: var(--border-hover);
 }
 
+/* Kanban board: 5 columns in a row. The board scrolls sideways, never the page. */
+.kanban {
+  min-width: 0;
+}
+
+.kanban-board {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  padding-bottom: 10px;
+}
+
+.kanban-board > .kanban-column {
+  scroll-snap-align: start;
+}
+
+.kanban-board-error {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.kanban-board-error a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 /* Section blocks */
 .detail-block {
   display: flex;

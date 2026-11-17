@@ -12,3 +12,10 @@ export type {
 
 export { setBookmarkStatusAction } from "./actions/set-bookmark-status";
 export { removeBookmarkAction } from "./actions/remove-bookmark";
+
+export {
+    BookmarkActionError,
+    useBookmarkStatuses,
+    useRemoveBookmark,
+    useSetBookmarkStatus,
+} from "./queries/use-bookmarks";

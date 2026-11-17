@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { bookmarks } from "@/db/schema";
 import { LIMITS } from "@/lib/constants/limits";
 
-import type { Bookmark, BookmarkStatus } from "../types";
+import type { Bookmark, BookmarkStatus, BookmarkStatusMap } from "../types";
 import type { SetBookmarkStatusInput } from "../validations/bookmark-schema";
 
 /**
@@ -29,6 +29,18 @@ export async function getUserBookmarks(userId: string): Promise<Bookmark[]> {
         .from(bookmarks)
         .where(eq(bookmarks.userId, userId))
         .orderBy(desc(bookmarks.updatedAt));
+}
+
+/**
+ * animeId → status for every bookmark of a user. Selects only those two
+ * columns (no titles or poster URLs): this feeds the bookmark button.
+ */
+export async function getBookmarkStatusMap(userId: string): Promise<BookmarkStatusMap> {
+    const rows = await db
+        .select({ animeId: bookmarks.animeId, status: bookmarks.status })
+        .from(bookmarks)
+        .where(eq(bookmarks.userId, userId));
+    return Object.fromEntries(rows.map((r) => [r.animeId, r.status]));
 }
 
 // A type alias (not an interface) so it satisfies db.execute's Record constraint.

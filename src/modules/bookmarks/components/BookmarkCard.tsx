@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { useDraggable } from "@dnd-kit/core";
+import { GripVertical, Trash2 } from "lucide-react";
 
 import { ROUTES } from "@/lib/constants/route";
 
@@ -18,14 +19,23 @@ interface BookmarkCardProps {
 /**
  * One card on the board. Presentational: the board owns the mutations, so
  * a move can update the columns instantly.
+ *
+ * Dragging starts only from the grip handle: the rest of the card keeps its
+ * links, select and button, and on phones a swipe on the card still scrolls.
+ * The "Move to…" select stays as the no-drag way to move a card.
  */
 export function BookmarkCard({ bookmark, onMove, onRemove }: BookmarkCardProps) {
-    const { animeId, title, posterUrl, status } = bookmark;
+    const { animeId, title, status } = bookmark;
     const [confirming, setConfirming] = useState(false);
     const removeRef = useRef<HTMLButtonElement>(null);
     const confirmRef = useRef<HTMLButtonElement>(null);
-    const poster = posterUrl ? smallPoster(posterUrl) : null;
     const href = ROUTES.ANIME_DETAIL(animeId);
+
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
+        id: animeId,
+        data: { status, title },
+        disabled: confirming,
+    });
 
     // Keep keyboard focus on the button that replaced the one just pressed.
     const wasConfirming = useRef(false);
@@ -36,24 +46,21 @@ export function BookmarkCard({ bookmark, onMove, onRemove }: BookmarkCardProps) 
     }, [confirming]);
 
     return (
-        <article className="bookmark-card">
+        <article ref={setNodeRef} className={`bookmark-card${isDragging ? " is-dragging" : ""}`}>
+            <button
+                ref={setActivatorNodeRef}
+                type="button"
+                className="bookmark-card-handle"
+                {...attributes}
+                {...listeners}
+                aria-label={`Drag ${title}`}
+            >
+                <GripVertical size={14} aria-hidden="true" />
+            </button>
+
             {/* prefetch={false}: a board can hold hundreds of cards. */}
             <Link href={href} className="bookmark-card-poster" prefetch={false} tabIndex={-1} aria-hidden="true">
-                {poster ? (
-                    // Plain <img>: straight from the MAL CDN, never through /_next/image.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={poster.src}
-                        srcSet={poster.srcSet}
-                        alt=""
-                        width={48}
-                        height={68}
-                        loading="lazy"
-                        decoding="async"
-                    />
-                ) : (
-                    <span className="bookmark-card-no-img">No image</span>
-                )}
+                <CardPoster bookmark={bookmark} />
             </Link>
 
             <div className="bookmark-card-body">
@@ -104,5 +111,44 @@ export function BookmarkCard({ bookmark, onMove, onRemove }: BookmarkCardProps) 
                 )}
             </div>
         </article>
+    );
+}
+
+/**
+ * The copy that follows the pointer while dragging (DragOverlay). No hooks,
+ * links or controls: just how the card looks.
+ */
+export function BookmarkCardPreview({ bookmark }: { bookmark: Bookmark }) {
+    return (
+        <div className="bookmark-card is-overlay" aria-hidden="true">
+            <span className="bookmark-card-handle">
+                <GripVertical size={14} />
+            </span>
+            <span className="bookmark-card-poster">
+                <CardPoster bookmark={bookmark} />
+            </span>
+            <div className="bookmark-card-body">
+                <span className="bookmark-card-title">{bookmark.title}</span>
+            </div>
+        </div>
+    );
+}
+
+function CardPoster({ bookmark }: { bookmark: Bookmark }) {
+    const poster = bookmark.posterUrl ? smallPoster(bookmark.posterUrl) : null;
+    if (!poster) return <span className="bookmark-card-no-img">No image</span>;
+    return (
+        // Plain <img>: straight from the MAL CDN, never through /_next/image.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+            src={poster.src}
+            srcSet={poster.srcSet}
+            alt=""
+            width={48}
+            height={68}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+        />
     );
 }

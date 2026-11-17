@@ -20,8 +20,9 @@ interface UserMenuProps {
  * logged in, and a same-size placeholder while the session loads (no
  * "Login" flash, no layout shift).
  *
- * Menu items for Profile/Bookmarks/Settings are added in the phases that
- * build those pages — no dead links until then.
+ * Menu items for Profile/Settings are added in the phases that build those
+ * pages — no dead links until then. (The mobile drawer gets Bookmarks from
+ * the Navbar's own link list.)
  */
 export function UserMenu({ variant, onAction }: UserMenuProps) {
     const { data: session, isPending } = useSession();
@@ -146,6 +147,16 @@ function UserDropdown({ name, email, image, onSignOut }: UserInfo & { onSignOut:
                         <span className="user-menu-name">{name}</span>
                         <span className="user-menu-email">{email}</span>
                     </div>
+                    {/* prefetch={false}: /bookmarks is dynamic (see Navbar). */}
+                    <Link
+                        href={ROUTES.DASHBOARD.BOOKMARKS}
+                        prefetch={false}
+                        role="menuitem"
+                        className="user-menu-item"
+                        onClick={() => setOpen(false)}
+                    >
+                        My Bookmarks
+                    </Link>
                     <button
                         type="button"
                         role="menuitem"

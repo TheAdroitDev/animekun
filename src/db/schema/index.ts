@@ -1,21 +1,21 @@
 import { relations } from "drizzle-orm";
 
 import { accounts, aiRequests, sessions, userPreferences, userRoleEnum, userTierEnum, users, verifications, } from "./users";
-import { bookmarkBoards, bookmarks, } from "./bookmarks";
+import { bookmarkStatusEnum, bookmarks, } from "./bookmarks";
 import { achievements, quizScores, } from "./quiz";
 import { chatMessages, notifications, } from "./chat";
 import { feedback } from "./feedback";
 
 // Enums must be exported here too: drizzle-kit only sees what this file
 // exports, and would otherwise try to DROP enums that exist in the database.
-export { userRoleEnum, userTierEnum, users, accounts, sessions, verifications, userPreferences, bookmarkBoards, bookmarks, quizScores, achievements, chatMessages, notifications, aiRequests, feedback }
+export { userRoleEnum, userTierEnum, bookmarkStatusEnum, users, accounts, sessions, verifications, userPreferences, bookmarks, quizScores, achievements, chatMessages, notifications, aiRequests, feedback }
 
 
 export const usersRelations = relations(users, ({ many, one }) => ({
     accounts: many(accounts),
     sessions: many(sessions),
     preferences: one(userPreferences),
-    bookmarkBoards: many(bookmarkBoards),
+    bookmarks: many(bookmarks),
     quizScores: many(quizScores),
     achievements: many(achievements),
     aiRequests: many(aiRequests),
@@ -65,26 +65,13 @@ export const userPreferencesRelations = relations(
     }),
 );
 
-// A board belongs to one user and contains many bookmarks:
-export const bookmarkBoardsRelations = relations(
-    bookmarkBoards,
-    ({ one, many }) => ({
-        user: one(users, {
-            fields: [bookmarkBoards.userId],
-            references: [users.id],
-        }),
-
-        bookmarks: many(bookmarks),
-    }),
-);
-
-// And each bookmark belongs to one board:
+// Each bookmark belongs to one user:
 export const bookmarksRelations = relations(
     bookmarks,
     ({ one }) => ({
-        board: one(bookmarkBoards, {
-            fields: [bookmarks.boardId],
-            references: [bookmarkBoards.id],
+        user: one(users, {
+            fields: [bookmarks.userId],
+            references: [users.id],
         }),
     }),
 );

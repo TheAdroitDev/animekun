@@ -25,3 +25,14 @@ export interface BoardColumn {
     status: BookmarkStatus;
     bookmarks: Bookmark[];
 }
+
+// What GET /api/bookmarks returns: animeId → status.
+export type BookmarkStatusMap = Record<string, BookmarkStatus>;
+
+// Server Actions return a code instead of throwing: in production Next hides
+// thrown messages, and the UI needs the reason to roll back with a message.
+export type ActionError = "invalid" | "unauthorized" | "limit" | "server";
+
+export type ActionResult<T = undefined> =
+    | { ok: true; data: T }
+    | { ok: false; error: ActionError };

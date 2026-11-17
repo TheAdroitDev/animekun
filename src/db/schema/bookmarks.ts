@@ -8,18 +8,16 @@ import {
     uuid,
 } from "drizzle-orm/pg-core";
 
+// Relative path on purpose: drizzle-kit loads schema files itself and may
+// not resolve the "@/" tsconfig alias.
+import { BOOKMARK_STATUSES } from "../../modules/bookmarks/types";
+
 import { users } from "./users";
 
-// The 5 Kanban columns. The status lives on the bookmark itself, so moving
-// a card is one UPDATE and adding one is one upsert (neon-http has no
-// transactions).
-export const bookmarkStatusEnum = pgEnum("bookmark_status", [
-    "watching",
-    "completed",
-    "plan_to_watch",
-    "on_hold",
-    "dropped",
-]);
+// The 5 Kanban columns (values defined once in modules/bookmarks/types).
+// The status lives on the bookmark itself, so moving a card is one UPDATE
+// and adding one is one upsert (neon-http has no transactions).
+export const bookmarkStatusEnum = pgEnum("bookmark_status", BOOKMARK_STATUSES);
 
 // Bookmarks: one row per (user, anime).
 export const bookmarks = pgTable(

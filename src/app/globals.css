@@ -2334,41 +2334,23 @@ button {
   opacity: 0.9;
 }
 
-/* Logged in: bookmarks "coming soon" */
-.bookmark-soon-badge {
-  padding: 1px 7px;
-  border-radius: 9999px;
-  background: var(--accent-subtle);
-  border: 1px solid var(--accent);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--accent);
+/* Logged in: status map loading, and save failed (change was rolled back) */
+.bookmark-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
 }
 
-.bookmark-soon-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.bookmark-error {
+  margin-top: 8px;
+  max-width: 280px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #ef4444;
 }
 
-.bookmark-soon-icon {
-  color: var(--accent);
-  animation: bookmark-hammer 1.2s ease-in-out 2;
-  transform-origin: 80% 80%;
-}
-
-@keyframes bookmark-hammer {
-  0%, 100% { transform: rotate(0); }
-  30% { transform: rotate(-25deg); }
-  50% { transform: rotate(8deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bookmark-soon-icon {
-    animation: none;
-  }
+.bookmark-error a {
+  color: inherit;
+  text-decoration: underline;
 }
 
 /* Section blocks */

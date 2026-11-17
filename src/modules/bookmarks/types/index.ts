@@ -11,6 +11,15 @@ export const BOOKMARK_STATUSES = [
 
 export type BookmarkStatus = (typeof BOOKMARK_STATUSES)[number];
 
+// Display names (bookmark menu, board columns).
+export const BOOKMARK_STATUS_LABELS: Record<BookmarkStatus, string> = {
+    watching: "Watching",
+    completed: "Completed",
+    plan_to_watch: "Plan to Watch",
+    on_hold: "On Hold",
+    dropped: "Dropped",
+};
+
 // A bookmark as the UI sees it (no row id or user id).
 export interface Bookmark {
     animeId: string;

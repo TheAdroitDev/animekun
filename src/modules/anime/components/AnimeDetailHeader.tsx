@@ -96,7 +96,7 @@ export function AnimeDetailHeader({
 
                     {/* Bookmark Action */}
                     <div className="detail-header-actions">
-                        <BookmarkButton animeId={anime.id} />
+                        <BookmarkButton animeId={anime.id} title={anime.title} posterUrl={anime.posterUrl} />
                     </div>
                 </div>
             </div>

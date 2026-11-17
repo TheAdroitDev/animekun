@@ -1,6 +1,6 @@
 // Client-safe exports only. The service (services/bookmark-service.ts) is
 // server-only: import it directly from server code, never through here.
-export { BOOKMARK_STATUSES } from "./types";
+export { BOOKMARK_STATUSES, BOOKMARK_STATUS_LABELS } from "./types";
 export type {
     ActionError,
     ActionResult,

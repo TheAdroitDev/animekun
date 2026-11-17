@@ -6,7 +6,6 @@ import { db } from  "./index"
 
 import {
   users,
-  bookmarkBoards,
   quizScores,
 } from "./schema";
 
@@ -84,47 +83,6 @@ async function seed() {
   if (!shivam || !rahul || !aditi) {
     throw new Error("Failed to find seeded users.");
   }
-
-  // ---------------------------------------------------
-  // Bookmark boards
-  // ---------------------------------------------------
-
-  const insertedBoards = await db
-    .insert(bookmarkBoards)
-    .values([
-      {
-        userId: shivam.id,
-        name: "Watching",
-        position: 0,
-      },
-      {
-        userId: shivam.id,
-        name: "Completed",
-        position: 1,
-      },
-      {
-        userId: shivam.id,
-        name: "Plan to Watch",
-        position: 2,
-      },
-      {
-        userId: rahul.id,
-        name: "Watching",
-        position: 0,
-      },
-      {
-        userId: aditi.id,
-        name: "Completed",
-        position: 0,
-      },
-    ])
-    .returning({
-      id: bookmarkBoards.id,
-      userId: bookmarkBoards.userId,
-      name: bookmarkBoards.name,
-    });
-
-  console.log(`✅ Inserted ${insertedBoards.length} bookmark boards`);
 
   // ---------------------------------------------------
   // Quiz scores

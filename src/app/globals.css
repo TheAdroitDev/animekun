@@ -2470,9 +2470,11 @@ button {
   font-weight: 600;
 }
 
-/* Kanban column (/bookmarks). Fixed width so the board can scroll sideways. */
+/* Kanban column (/bookmarks). Columns share the width; below 240px each,
+   the board scrolls sideways instead (phones). */
 .kanban-column {
-  flex: 0 0 260px;
+  flex: 1 1 0;
+  min-width: 240px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2548,16 +2550,149 @@ button {
 
 .kanban-board {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch; /* equal column heights */
   gap: 14px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
   padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hover) transparent;
+}
+
+.kanban-board::-webkit-scrollbar {
+  height: 8px;
+}
+
+.kanban-board::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kanban-board::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border-radius: 9999px;
 }
 
 .kanban-board > .kanban-column {
   scroll-snap-align: start;
+}
+
+/* Drag and drop (@dnd-kit) */
+.bookmark-card-handle {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  margin: -2px -4px -2px -4px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: grab;
+  touch-action: none; /* the finger drags the card here instead of scrolling */
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.bookmark-card-handle:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.bookmark-card-handle:focus-visible {
+  outline: 2px solid var(--accent-readable);
+  outline-offset: 1px;
+}
+
+/* The original card stays in place, faded, while its copy is dragged. */
+.bookmark-card.is-dragging {
+  opacity: 0.35;
+}
+
+.bookmark-card.is-overlay {
+  cursor: grabbing;
+  border-color: var(--border-hover);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  transform: rotate(2deg);
+}
+
+.bookmark-card.is-overlay .bookmark-card-handle {
+  cursor: grabbing;
+}
+
+.kanban-column {
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.kanban-column.is-drop-target {
+  border-color: var(--accent-readable);
+  background: var(--bg-elevated);
+}
+
+.kanban-column-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Collapse toggle: phones only */
+.kanban-column-toggle {
+  display: none;
+}
+
+/* Phones: columns stack top to bottom (drag up/down), each collapsible. */
+@media (max-width: 640px) {
+  .kanban-board {
+    flex-direction: column;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+
+  .kanban-column {
+    flex: none;
+    min-width: 0;
+  }
+
+  .kanban-column-header {
+    justify-content: flex-start;
+  }
+
+  .kanban-column-count {
+    margin-right: auto;
+  }
+
+  .kanban-column-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .kanban-column-toggle svg {
+    transition: transform 0.2s ease;
+  }
+
+  .kanban-column.is-collapsed .kanban-column-toggle svg {
+    transform: rotate(-90deg);
+  }
+
+  .kanban-column.is-collapsed .kanban-column-body {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bookmark-card.is-overlay {
+    transform: none;
+  }
 }
 
 .kanban-board-error {

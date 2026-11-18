@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useDraggable } from "@dnd-kit/core";
-import { GripVertical, Trash2 } from "lucide-react";
+import { ChevronDown, GripVertical, Trash2 } from "lucide-react";
 
 import { ROUTES } from "@/lib/constants/route";
 
@@ -46,7 +46,7 @@ export function BookmarkCard({ bookmark, onMove, onRemove }: BookmarkCardProps) 
     }, [confirming]);
 
     return (
-        <article ref={setNodeRef} className={`bookmark-card${isDragging ? " is-dragging" : ""}`}>
+        <article ref={setNodeRef} className={`bookmark-card${isDragging ? " is-dragging" : ""}`} data-status={status}>
             <button
                 ref={setActivatorNodeRef}
                 type="button"
@@ -83,21 +83,25 @@ export function BookmarkCard({ bookmark, onMove, onRemove }: BookmarkCardProps) 
                     </div>
                 ) : (
                     <div className="bookmark-card-actions">
-                        <select
-                            className="bookmark-card-move"
-                            aria-label={`Move ${title} to another list`}
-                            value=""
-                            onChange={(e) => onMove(e.target.value as BookmarkStatus)}
-                        >
-                            <option value="" disabled>
-                                Move to…
-                            </option>
-                            {BOOKMARK_STATUSES.filter((s) => s !== status).map((s) => (
-                                <option key={s} value={s}>
-                                    {BOOKMARK_STATUS_LABELS[s]}
+                        {/* Wrapper draws a themed chevron (the native arrow is hidden). */}
+                        <span className="bookmark-card-move-wrap">
+                            <select
+                                className="bookmark-card-move"
+                                aria-label={`Move ${title} to another list`}
+                                value=""
+                                onChange={(e) => onMove(e.target.value as BookmarkStatus)}
+                            >
+                                <option value="" disabled>
+                                    Move to…
                                 </option>
-                            ))}
-                        </select>
+                                {BOOKMARK_STATUSES.filter((s) => s !== status).map((s) => (
+                                    <option key={s} value={s}>
+                                        {BOOKMARK_STATUS_LABELS[s]}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown size={14} className="bookmark-card-move-chevron" aria-hidden="true" />
+                        </span>
                         <button
                             ref={removeRef}
                             type="button"
@@ -120,7 +124,7 @@ export function BookmarkCard({ bookmark, onMove, onRemove }: BookmarkCardProps) 
  */
 export function BookmarkCardPreview({ bookmark }: { bookmark: Bookmark }) {
     return (
-        <div className="bookmark-card is-overlay" aria-hidden="true">
+        <div className="bookmark-card is-overlay" data-status={bookmark.status} aria-hidden="true">
             <span className="bookmark-card-handle">
                 <GripVertical size={14} />
             </span>
@@ -144,8 +148,8 @@ function CardPoster({ bookmark }: { bookmark: Bookmark }) {
             src={poster.src}
             srcSet={poster.srcSet}
             alt=""
-            width={48}
-            height={68}
+            width={56}
+            height={80}
             loading="lazy"
             decoding="async"
             draggable={false}

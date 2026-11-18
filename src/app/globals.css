@@ -2353,6 +2353,30 @@ button {
   text-decoration: underline;
 }
 
+/* Bookmark statuses: one colour each. [data-status] sets --status-color on
+   columns, cards and summary chips. Red stays the brand/error colour. */
+:root {
+  --status-watching: #22c55e;
+  --status-completed: #3b82f6;
+  --status-plan: #a855f7;
+  --status-hold: #f59e0b;
+  --status-dropped: #94a3b8;
+}
+
+[data-status="watching"] { --status-color: var(--status-watching); }
+[data-status="completed"] { --status-color: var(--status-completed); }
+[data-status="plan_to_watch"] { --status-color: var(--status-plan); }
+[data-status="on_hold"] { --status-color: var(--status-hold); }
+[data-status="dropped"] { --status-color: var(--status-dropped); }
+
+.kanban-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--status-color, var(--text-muted));
+}
+
 /* Bookmark card (Kanban board, /bookmarks) */
 .bookmark-card {
   display: flex;
@@ -2365,12 +2389,12 @@ button {
 }
 
 .bookmark-card:hover {
-  border-color: var(--border-hover);
+  border-color: color-mix(in srgb, var(--status-color, var(--border-hover)) 50%, var(--border));
 }
 
 .bookmark-card-poster {
-  flex: 0 0 48px;
-  height: 68px;
+  flex: 0 0 56px;
+  height: 80px;
   border-radius: 6px;
   overflow: hidden;
   background: var(--bg-secondary);
@@ -2401,9 +2425,10 @@ button {
 }
 
 .bookmark-card-title {
-  font-size: 13px;
+  margin-top: 2px;
+  font-size: 13.5px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.35;
   color: var(--text-primary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -2423,23 +2448,56 @@ button {
   font-size: 12px;
 }
 
+/* "Move to…": native select (light, accessible) with a themed chevron. */
+.bookmark-card-move-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
 .bookmark-card-move {
   flex: 1;
   min-width: 0;
-  padding: 4px 6px;
-  border-radius: 6px;
+  height: 28px;
+  padding: 0 26px 0 9px;
+  border-radius: 7px;
+  font-family: inherit;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.bookmark-card-move:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.bookmark-card-move:focus-visible {
+  outline: 2px solid var(--accent-readable);
+  outline-offset: 1px;
+}
+
+.bookmark-card-move-chevron {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
 .bookmark-card-remove,
 .bookmark-card-yes,
 .bookmark-card-cancel {
-  padding: 4px 8px;
+  height: 28px;
+  padding: 0 8px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
@@ -2473,22 +2531,41 @@ button {
 /* Kanban column (/bookmarks). Columns share the width; below 240px each,
    the board scrolls sideways instead (phones). */
 .kanban-column {
+  position: relative;
+  overflow: hidden; /* clips the kanji watermark */
   flex: 1 1 0;
   min-width: 240px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  gap: 12px;
+  padding: 14px 12px 12px;
   border-radius: 14px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
+  /* Status colour line along the top edge (follows the rounded corners). */
+  box-shadow: inset 0 3px 0 var(--status-color, transparent);
+}
+
+/* Faint kanji behind the header, like the admin banner. */
+.kanban-column-kanji {
+  position: absolute;
+  top: 2px;
+  right: 10px;
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--status-color, var(--text-primary));
+  opacity: 0.1;
+  pointer-events: none;
+  user-select: none;
 }
 
 .kanban-column-header {
+  position: relative; /* above the kanji */
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
+  min-height: 32px;
 }
 
 .kanban-column-title {
@@ -2504,9 +2581,9 @@ button {
   font-size: 12px;
   font-weight: 700;
   text-align: center;
-  color: var(--text-secondary);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--status-color, var(--text-muted)) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-color, var(--border)) 35%, transparent);
 }
 
 .kanban-column-list {
@@ -2519,12 +2596,28 @@ button {
 }
 
 .kanban-column-empty {
-  padding: 18px 8px;
-  font-size: 13px;
+  padding: 14px 8px;
+  font-size: 12.5px;
+  font-weight: 600;
   text-align: center;
   color: var(--text-muted);
-  border: 1px dashed var(--border);
+  border: 1px dashed color-mix(in srgb, var(--status-color, var(--border)) 30%, var(--border));
   border-radius: 10px;
+}
+
+/* Mouse users get "Drag anime here"; touch users "Nothing here yet". */
+.kanban-hint-pointer {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .kanban-hint-pointer {
+    display: inline;
+  }
+
+  .kanban-hint-touch {
+    display: none;
+  }
 }
 
 .kanban-column-more {
@@ -2544,10 +2637,6 @@ button {
 }
 
 /* Kanban board: 5 columns in a row. The board scrolls sideways, never the page. */
-.kanban {
-  min-width: 0;
-}
-
 .kanban-board {
   display: flex;
   align-items: stretch; /* equal column heights */
@@ -2555,7 +2644,9 @@ button {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  padding-bottom: 10px;
+  /* 4px room so the drop-target halo isn't clipped by the scroll edges. */
+  padding: 4px 4px 10px;
+  margin: -4px -4px 0;
   scrollbar-width: thin;
   scrollbar-color: var(--border-hover) transparent;
 }
@@ -2615,7 +2706,7 @@ button {
   cursor: grabbing;
   border-color: var(--border-hover);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
-  transform: rotate(2deg);
+  transform: rotate(2deg) scale(1.03);
 }
 
 .bookmark-card.is-overlay .bookmark-card-handle {
@@ -2623,12 +2714,16 @@ button {
 }
 
 .kanban-column {
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Drop target glows in its own status colour (thicker top line + halo). */
 .kanban-column.is-drop-target {
-  border-color: var(--accent-readable);
+  border-color: var(--status-color, var(--accent-readable));
   background: var(--bg-elevated);
+  box-shadow:
+    inset 0 4px 0 var(--status-color, transparent),
+    0 0 0 3px color-mix(in srgb, var(--status-color, var(--accent)) 22%, transparent);
 }
 
 .kanban-column-body {
@@ -2696,7 +2791,7 @@ button {
 }
 
 .kanban-board-error {
-  margin-bottom: 12px;
+  margin: 0; /* spacing comes from .kanban gap */
   padding: 10px 12px;
   border-radius: 10px;
   font-size: 13px;
@@ -2722,54 +2817,238 @@ button {
 }
 
 .bookmarks-page-header {
+  position: relative;
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
+  align-items: center;
+  min-height: 56px;
 }
 
 .bookmarks-page-title {
-  font-size: 26px;
+  position: relative; /* above the kanji */
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.bookmarks-page-kanji {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 4.5rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text-primary);
+  opacity: 0.05;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Board summary: total + one chip per status (live counts). */
+.kanban {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kanban-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.kanban-summary-total {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.kanban-summary-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kanban-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.kanban-summary-num {
+  display: inline-block; /* so the bump can scale it */
   font-weight: 800;
   color: var(--text-primary);
 }
 
-.bookmarks-page-count {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
+/* Empty page (no bookmarks at all) */
 .bookmarks-page-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 48px 16px;
+  gap: 8px;
+  padding: 56px 16px;
   text-align: center;
-  font-size: 15px;
-  color: var(--text-secondary);
   border: 1px dashed var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
+  background: var(--bg-secondary);
+}
+
+.bookmarks-page-empty-icon {
+  margin-bottom: 6px;
+  color: var(--accent-readable);
+}
+
+.bookmarks-page-empty-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.bookmarks-page-empty-text {
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 .bookmarks-page-empty-link {
-  padding: 9px 18px;
+  margin-top: 10px;
+  padding: 10px 20px;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 700;
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
+  color: #fff;
+  background: var(--accent);
+  transition: background 0.15s ease;
 }
 
 .bookmarks-page-empty-link:hover {
-  border-color: var(--border-hover);
+  background: var(--accent-hover);
+}
+
+.bookmarks-page-empty-link:focus-visible {
+  outline: 2px solid var(--accent-readable);
+  outline-offset: 2px;
 }
 
 @media (max-width: 640px) {
   .bookmarks-page {
     padding: 24px 16px 64px;
+  }
+}
+
+/* Board micro-interactions. Each list item is a 1-row grid so a removed
+   card can collapse its height smoothly (cards below slide up). */
+.kanban-column-list > li {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.kanban-column-list > li > .bookmark-card {
+  min-height: 0;
+}
+
+.kanban-column-list > li.is-leaving {
+  grid-template-rows: 0fr;
+  margin-bottom: -8px; /* absorb the list gap too */
+  pointer-events: none;
+}
+
+.kanban-column-list > li.is-leaving > .bookmark-card {
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+@keyframes bookmark-pickup {
+  from {
+    transform: rotate(0) scale(1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@keyframes bookmark-bump {
+  40% {
+    transform: scale(1.25);
+  }
+}
+
+/* All motion only for people who haven't asked to reduce it. */
+@media (prefers-reduced-motion: no-preference) {
+  .bookmark-card:not(.is-overlay) {
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      transform 0.18s ease,
+      opacity 0.18s ease;
+  }
+
+  /* New card (page load, moved here, "Show more"): fade + slide into place. */
+  @starting-style {
+    .bookmark-card:not(.is-overlay) {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  /* Hover lift (mouse only), not while it's being dragged or removed. */
+  @media (hover: hover) {
+    .bookmark-card:not(.is-overlay):not(.is-dragging):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+    }
+  }
+
+  .bookmark-card-handle {
+    transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  }
+
+  .bookmark-card-handle:active {
+    transform: scale(0.92);
+  }
+
+  /* Picked up: the dragged copy pops up and tilts. */
+  .bookmark-card.is-overlay {
+    animation: bookmark-pickup 0.15s ease-out;
+  }
+
+  /* Remove: card fades/shrinks while its row collapses (180ms = EXIT_MS). */
+  .kanban-column-list > li {
+    transition: grid-template-rows 0.18s ease, margin-bottom 0.18s ease;
+  }
+
+  .kanban-column-list > li.is-leaving > .bookmark-card {
+    transition: opacity 0.14s ease, transform 0.18s ease;
+  }
+
+  /* "Remove? Yes / Cancel" slides in. */
+  .bookmark-card-confirm {
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  @starting-style {
+    .bookmark-card-confirm {
+      opacity: 0;
+      transform: translateX(6px);
+    }
+  }
+
+  /* Counts bump when they change. */
+  .kanban-column-count.is-bump,
+  .kanban-summary-num.is-bump {
+    animation: bookmark-bump 0.3s ease-out;
   }
 }
 

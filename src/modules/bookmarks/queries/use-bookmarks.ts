@@ -7,10 +7,16 @@ import { useSession } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/constants/route";
 import type { ApiResponseType } from "@/types/api";
 
+import { moveBookmarkAction, reorderColumnAction } from "../actions/move-bookmark";
 import { removeBookmarkAction } from "../actions/remove-bookmark";
 import { setBookmarkStatusAction } from "../actions/set-bookmark-status";
 import type { ActionError, ActionResult, Bookmark, BookmarkStatusMap } from "../types";
-import type { RemoveBookmarkInput, SetBookmarkStatusInput } from "../validations/bookmark-schema";
+import type {
+    MoveBookmarkInput,
+    RemoveBookmarkInput,
+    ReorderColumnInput,
+    SetBookmarkStatusInput,
+} from "../validations/bookmark-schema";
 
 /** Thrown by the mutations when a Server Action returns { ok: false }. */
 export class BookmarkActionError extends Error {
@@ -135,5 +141,39 @@ export function useRemoveBookmark() {
         onSettled: (_data, error, _input, context) => {
             if (!error && !context?.previous) void queryClient.invalidateQueries({ queryKey: key });
         },
+    });
+}
+
+/**
+ * Board drag and drop: reorder or move a card (the board updates its own
+ * list optimistically). Keeps the status map for the anime pages' button in
+ * sync, with the same refetch rules as useSetBookmarkStatus.
+ */
+export function useMoveBookmark() {
+    const queryClient = useQueryClient();
+    const { data: session } = useSession();
+    const key = bookmarksKey(session?.user.id);
+
+    return useMutation<Bookmark, Error, MoveBookmarkInput, MutationContext>({
+        mutationFn: async (input) => unwrap(await moveBookmarkAction(input)),
+
+        onMutate: async (input) => {
+            await queryClient.cancelQueries({ queryKey: key });
+            const previous = queryClient.getQueryData<BookmarkStatusMap>(key);
+            if (previous) queryClient.setQueryData<BookmarkStatusMap>(key, { ...previous, [input.animeId]: input.status });
+            return { previous };
+        },
+
+        onError: (_error, _input, context) => {
+            if (context?.previous) queryClient.setQueryData(key, context.previous);
+            void queryClient.invalidateQueries({ queryKey: key });
+        },
+    });
+}
+
+/** Rare: renumber a column after a drop left no room between two cards. */
+export function useReorderColumn() {
+    return useMutation<undefined, Error, ReorderColumnInput>({
+        mutationFn: async (input) => unwrap(await reorderColumnAction(input)),
     });
 }

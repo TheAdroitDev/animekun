@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useDraggable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
 import { GripVertical, Trash2 } from "lucide-react";
 
 import { ROUTES } from "@/lib/constants/route";
@@ -31,10 +31,13 @@ export function BookmarkCard({ bookmark, onRemove }: BookmarkCardProps) {
     const { animeId, title, status } = bookmark;
     const href = ROUTES.ANIME_DETAIL(animeId);
 
-    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
-        id: animeId,
-        data: { status, title },
-    });
+    // Sortable: cards slide apart to open a gap where the dragged card will land.
+    // type "card" lets the board's collision logic prefer cards over columns.
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging, transform, transition } =
+        useSortable({
+            id: animeId,
+            data: { type: "card", status, title },
+        });
 
     return (
         // data-bookmark-id: the board finds this element to toss it / fly it back.
@@ -44,6 +47,10 @@ export function BookmarkCard({ bookmark, onRemove }: BookmarkCardProps) {
             className={`bookmark-card${isDragging ? " is-dragging" : ""}`}
             data-status={status}
             data-bookmark-id={animeId}
+            style={{
+                transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+                transition: transition ?? undefined,
+            }}
             {...listeners}
         >
             <button

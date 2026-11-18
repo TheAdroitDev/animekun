@@ -2441,8 +2441,7 @@ button {
   color: var(--accent-readable);
 }
 
-.bookmark-card-actions,
-.bookmark-card-confirm {
+.bookmark-card-actions {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2471,9 +2470,7 @@ button {
   }
 }
 
-.bookmark-card-remove,
-.bookmark-card-yes,
-.bookmark-card-cancel {
+.bookmark-card-remove {
   height: 28px;
   padding: 0 8px;
   border-radius: 6px;
@@ -2487,37 +2484,15 @@ button {
   align-items: center;
 }
 
-.bookmark-card-remove:hover,
-.bookmark-card-yes {
+.bookmark-card-remove:hover {
   color: #ef4444;
   border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
 }
 
-.bookmark-card-yes:hover {
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.bookmark-card-cancel:hover {
-  background: var(--bg-secondary);
-}
-
-/* Remove confirmation: covers the whole card so it always fits. */
-.bookmark-card-confirm {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px;
-  border-radius: inherit;
-  background: color-mix(in srgb, var(--bg-elevated) 90%, transparent);
-  backdrop-filter: blur(3px);
-}
-
-.bookmark-card-confirm span {
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
+.bookmark-card-remove:focus-visible {
+  outline: 2px solid var(--accent-readable);
+  outline-offset: 1px;
 }
 
 /* Kanban column (/bookmarks). Columns share the width; below 240px each,
@@ -2701,6 +2676,37 @@ button {
     0 0 0 3px color-mix(in srgb, var(--status-color, var(--accent)) 22%, transparent);
 }
 
+/* Whole card is draggable: grab cursor (mouse), no text selection or
+   long-press menus (touch) getting in the way of a drag. */
+.bookmark-card {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bookmark-card:not(.is-overlay) {
+    cursor: grab;
+  }
+}
+
+/* Faint copy of the dragged card where it will land (top of the column),
+   outlined in the TARGET column's colour (the wrapper has no data-status). */
+.kanban-drop-preview {
+  border: 1.5px dashed var(--status-color, var(--border-hover));
+  border-radius: 12px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.kanban-drop-preview .bookmark-card {
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+  animation: none;
+}
+
 .kanban-column-body {
   display: flex;
   flex-direction: column;
@@ -2785,7 +2791,7 @@ button {
 .bookmarks-page {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 24px 80px;
+  padding: 32px 24px 120px; /* bottom: room for the fixed bin */
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -2903,7 +2909,7 @@ button {
 
 @media (max-width: 640px) {
   .bookmarks-page {
-    padding: 24px 16px 64px;
+    padding: 24px 16px 104px;
   }
 }
 
@@ -2928,10 +2934,378 @@ button {
   pointer-events: none;
 }
 
+/* Removed card: the paper-ball copy takes over, so the card itself hides
+   at once while its row closes. A card put back by Undo stays hidden (but
+   keeps its space) until the ball has flown home and uncrumpled. */
+.kanban-column-list > li.is-leaving > .bookmark-card,
+.kanban-column-list > li.is-returning > .bookmark-card {
+  visibility: hidden;
+}
+
 .kanban-column-list > li.is-leaving > .bookmark-card {
   overflow: hidden;
+}
+
+/* ── Toss-to-bin delete (utils/toss.ts, TossBin, UndoToast) ── */
+
+/* The flying copy of the card / paper ball. */
+.toss-ghost {
+  position: fixed;
+  z-index: 61; /* between the bin's back (60) and front (62): falls *into* it */
+  overflow: hidden;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.toss-ghost-content,
+.toss-ghost-skin {
+  position: absolute;
+  inset: 0;
+}
+
+.toss-ghost .bookmark-card {
+  height: 100%;
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Ramen toppings the card turns into (random per toss, see utils/toss.ts).
+   Shapes (size, roundness) come from SHAPES there; these are the looks. */
+.toss-ghost-skin {
   opacity: 0;
-  transform: scale(0.96);
+}
+
+/* 味玉 ajitama: soft-boiled egg half, jammy yolk */
+.toss-skin--egg {
+  background:
+    radial-gradient(ellipse 34% 40% at 50% 52%, #f29a12 0%, #f7b23a 55%, #ffd77a 85%, transparent 100%),
+    radial-gradient(ellipse at 40% 35%, #ffffff 0%, #fbf3e4 60%, #e9dcc2 100%);
+}
+
+/* なると naruto: white slice, pink swirl */
+.toss-skin--naruto {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      #ec6f9a 0 8%,
+      transparent 9% 20%,
+      #ec6f9a 21% 29%,
+      transparent 30% 44%,
+      #ec6f9a 45% 52%,
+      transparent 53%
+    ),
+    radial-gradient(circle at 42% 38%, #ffffff 0%, #fbf7f5 70%, #eadbd6 100%);
+}
+
+/* 海苔 nori: dark seaweed sheet with fibre lines */
+.toss-skin--nori {
+  background:
+    repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 4px),
+    linear-gradient(135deg, #2a4a36 0%, #183024 55%, #0e1d15 100%);
+}
+
+/* チャーシュー chashu: pork slice, fatty ring, browned edge */
+.toss-skin--chashu {
+  background: radial-gradient(
+    circle at 48% 48%,
+    #f3d9b8 0 16%,
+    #c48a55 22% 48%,
+    #f0d2ab 53% 58%,
+    #a8652f 63% 82%,
+    #6e3b18 92% 100%
+  );
+}
+
+/* メンマ menma: fermented bamboo-shoot strip */
+.toss-skin--menma {
+  background:
+    repeating-linear-gradient(90deg, rgba(120, 78, 28, 0.28) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, #eec987 0%, #d7a554 60%, #b98436 100%);
+}
+
+/* The ramen bowl: two fixed layers at the same spot (back = broth and
+   toppings, front = bowl, chopsticks, steam). Bottom LEFT: the feedback
+   widget owns the bottom-right corner. */
+.toss-bin {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  width: 72px;
+  height: 56px;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+}
+
+.toss-bin svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.toss-bin-back {
+  z-index: 60;
+}
+
+.toss-bin-front {
+  z-index: 62;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.28));
+}
+
+/* Chopsticks: pivot at their right end (they swing up like a lid). */
+.toss-bin-lid {
+  transform-box: view-box;
+  transform-origin: 76px 22.5px;
+}
+
+.toss-bowl-ripple {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.toss-bowl-drop {
+  opacity: 0; /* shown only while a splash animates */
+}
+
+.toss-bowl-steam {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+/* 食券 meal ticket (the count), like a ramen-shop ticket machine stub. */
+.toss-ticket {
+  position: absolute;
+  top: -14px;
+  right: -12px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 6px 3px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #7a1f1a;
+  background: #fdf6e3;
+  border: 1px dashed #d4bf94;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  rotate: -8deg;
+}
+
+.toss-ticket-label {
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #b0453c;
+}
+
+.toss-ticket-num {
+  display: inline-block;
+}
+
+/* ── Stacked toasts (ToastStack.tsx) ──
+   Collapsed: newest in front, up to 2 older ones peek out behind (8px up,
+   5% smaller each). Expanded (hover / focus / tap): a column with 8px gaps.
+   Toasts are bottom-anchored, so the stack grows upward. */
+.toast-stack {
+  --toast-h: 52px;
+  --toast-gap: 8px;
+  --toast-peek: 8px;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  position: fixed;
+  z-index: 63;
+  left: 50%;
+  bottom: 28px;
+  translate: -50% 0;
+  width: min(440px, calc(100vw - 32px));
+  height: calc(var(--toast-h) + var(--toast-peek) * min(var(--count) - 1, 2));
+}
+
+/* Its height covers the gaps too, so moving the pointer between toasts
+   doesn't collapse the stack. */
+.toast-stack.is-expanded {
+  height: calc((var(--toast-h) + var(--toast-gap)) * var(--count) - var(--toast-gap));
+}
+
+.stack-toast {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: calc(20 - var(--i));
+  box-sizing: border-box;
+  height: var(--toast-h);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 10px 2px 16px;
+  border-radius: 12px;
+  overflow: hidden; /* clips the progress bar to the rounded corners */
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  transform-origin: 50% 100%;
+  transform: translateY(calc(var(--toast-peek) * var(--i) * -1)) scale(calc(1 - 0.05 * var(--i)));
+}
+
+.toast-stack.is-expanded .stack-toast {
+  transform: translateY(calc((var(--toast-h) + var(--toast-gap)) * var(--i) * -1));
+}
+
+/* Collapsed: the toasts behind only show their edge (content hidden, a touch dimmer). */
+.toast-stack:not(.is-expanded) .stack-toast:not(.is-front) > :not(.stack-toast-progress) {
+  opacity: 0;
+}
+
+.toast-stack:not(.is-expanded) .stack-toast:not(.is-front) {
+  filter: brightness(0.94);
+}
+
+.stack-toast.is-hidden {
+  opacity: 0;
+}
+
+.stack-toast.is-leaving {
+  opacity: 0;
+  translate: 0 14px;
+  pointer-events: none;
+}
+
+.stack-toast-text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stack-toast-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stack-toast-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-readable);
+  background: var(--accent-subtle);
+  cursor: pointer;
+}
+
+.stack-toast-btn:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.stack-toast-btn:focus-visible {
+  outline: 2px solid var(--accent-readable);
+  outline-offset: 2px;
+}
+
+/* Time left: drains right to left. The animation IS the toast's timer
+   (animationend closes it), so it runs even with reduced motion, and it
+   pauses for every toast while the stack is open. */
+.stack-toast-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--accent);
+  transform-origin: left center;
+  animation: stack-toast-drain 5.2s linear forwards;
+}
+
+.toast-stack.is-expanded .stack-toast-progress {
+  animation-play-state: paused;
+}
+
+@keyframes stack-toast-drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Bowl as a button (tap twice to bring everything back) + speech bubble. */
+.toss-bin-button {
+  position: absolute;
+  inset: -4px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto; /* the bowl layer itself ignores the pointer */
+}
+
+.toss-bin-button:focus-visible {
+  outline: 2px solid var(--accent-readable);
+  outline-offset: 2px;
+}
+
+.toss-bin-front:has(.toss-bin-button:hover) .toss-bowl-steam {
+  opacity: 0.75;
+}
+
+.toss-bubble {
+  position: absolute;
+  left: -6px;
+  bottom: calc(100% + 26px); /* above the steam */
+  padding: 7px 11px;
+  border-radius: 12px;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  transform-origin: 30px 100%;
+  pointer-events: none;
+}
+
+/* Tail pointing down at the bowl. */
+.toss-bubble::after {
+  content: "";
+  position: absolute;
+  left: 26px;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  rotate: 45deg;
+}
+
+@media (max-width: 640px) {
+  .toss-bin {
+    left: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  /* Above the bin (left) and the feedback button (right). */
+  .toast-stack {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    translate: none;
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
 }
 
 @keyframes bookmark-pickup {
@@ -2991,25 +3365,105 @@ button {
     transition: grid-template-rows 0.18s ease, margin-bottom 0.18s ease;
   }
 
-  .kanban-column-list > li.is-leaving > .bookmark-card {
-    transition: opacity 0.14s ease, transform 0.18s ease;
-  }
-
-  /* "Remove? Yes / Cancel" overlay fades in. */
-  .bookmark-card-confirm {
-    transition: opacity 0.15s ease;
+  /* Drop preview fades in when the card enters a column. */
+  .kanban-drop-preview {
+    transition: opacity 0.15s ease, translate 0.15s ease;
   }
 
   @starting-style {
-    .bookmark-card-confirm {
+    .kanban-drop-preview {
       opacity: 0;
+      translate: 0 -4px;
     }
   }
 
-  /* Counts bump when they change. */
+  /* Toast stack: a new toast rises into the front while the others ease
+     back a step; fanning out/in uses the same soft curve. */
+  .toast-stack {
+    transition: height 0.4s var(--ease-out-soft);
+  }
+
+  .stack-toast {
+    transition:
+      transform 0.4s var(--ease-out-soft),
+      opacity 0.25s ease,
+      translate 0.25s ease,
+      filter 0.25s ease;
+  }
+
+  .stack-toast > * {
+    transition: opacity 0.2s ease;
+  }
+
+  @starting-style {
+    .stack-toast {
+      opacity: 0;
+      translate: 0 16px;
+    }
+  }
+
+  /* Speech bubble pops up from the bowl; the ticket wiggles while armed. */
+  .toss-bubble {
+    transition: scale 0.25s var(--ease-pop, cubic-bezier(0.34, 1.56, 0.64, 1)), opacity 0.2s ease;
+  }
+
+  @starting-style {
+    .toss-bubble {
+      opacity: 0;
+      scale: 0.85;
+    }
+  }
+
+  .toss-bin-front.is-armed .toss-ticket {
+    animation: toss-ticket-wiggle 0.5s ease-in-out infinite alternate;
+  }
+
+  /* Counts bump when they change (bin badge: paper-toss 380ms). */
   .kanban-column-count.is-bump,
   .kanban-summary-num.is-bump {
     animation: bookmark-bump 0.3s ease-out;
+  }
+
+  .toss-ticket-num.is-bump {
+    animation: bookmark-bump 0.38s linear;
+  }
+
+  /* Ticket pops in when the first ball lands. */
+  .toss-ticket {
+    transition: scale 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @starting-style {
+    .toss-ticket {
+      scale: 0;
+    }
+  }
+
+  /* Steam drifts up and fades, forever (gently). */
+  .toss-bowl-steam path {
+    animation: toss-steam 3.2s ease-in-out infinite;
+  }
+
+  .toss-bowl-steam path:nth-child(2) {
+    animation-delay: -1.1s;
+  }
+
+  .toss-bowl-steam path:nth-child(3) {
+    animation-delay: -2.2s;
+  }
+}
+
+@keyframes toss-steam {
+  0% {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -6px;
   }
 }
 
@@ -6847,5 +7301,14 @@ input[type="search"]::-webkit-search-results-decoration {
 
   .village-section-title {
     font-size: 1.3rem;
+  }
+}
+
+@keyframes toss-ticket-wiggle {
+  from {
+    rotate: -12deg;
+  }
+  to {
+    rotate: -4deg;
   }
 }

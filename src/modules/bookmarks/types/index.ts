@@ -19,12 +19,18 @@ export const BOOKMARK_STATUS_LABELS: Record<BookmarkStatus, string> = {
     on_hold: "On Hold",
     dropped: "Dropped",
 };
+// Spacing between card positions in a column, so a drop between two cards
+// is one UPDATE (the midpoint). Shared by the board and the service.
+export const POSITION_GAP = 1024;
+
 // A bookmark as the UI sees it (no row id or user id).
 export interface Bookmark {
     animeId: string;
     status: BookmarkStatus;
     title: string;
     posterUrl: string | null;
+    // Order inside its column: lower first (gapped by 1024; ties: newest first).
+    position: number;
     updatedAt: Date;
 }
 

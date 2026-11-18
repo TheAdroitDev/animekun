@@ -30,9 +30,13 @@ import {
 } from "../types";
 import { BookmarkCardPreview } from "./BookmarkCard";
 import { BookmarkErrorMessage } from "./BookmarkErrorMessage";
+import { BumpCount } from "./BumpCount";
 import { KanbanColumn } from "./KanbanColumn";
 
 const LOGIN_HREF = `${ROUTES.AUTH.LOGIN}?redirect=${encodeURIComponent(ROUTES.DASHBOARD.BOOKMARKS)}`;
+
+// Must match the .is-leaving transition in globals.css.
+const EXIT_MS = 180;
 
 // ── Drag and drop (@dnd-kit/core) ─────────────────────────────────────────
 
@@ -143,16 +147,34 @@ export function KanbanBoard({ initialBookmarks }: KanbanBoardProps) {
         }
     }
 
+    // Remove: the card plays its exit animation (CSS .is-leaving), then leaves
+    // the list. The save starts right away, so the animation adds no wait.
+    const [leavingIds, setLeavingIds] = useState<ReadonlySet<string>>(new Set());
+    const setLeaving = (animeId: string, leaving: boolean) =>
+        setLeavingIds((cur) => {
+            const next = new Set(cur);
+            if (leaving) next.add(animeId);
+            else next.delete(animeId);
+            return next;
+        });
+
     async function handleRemove(animeId: string) {
         const before = items.find((b) => b.animeId === animeId);
         if (!before) return;
 
         setError(null);
-        setItems((cur) => cur.filter((b) => b.animeId !== animeId));
+        setLeaving(animeId, true);
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const timer = window.setTimeout(() => {
+            setItems((cur) => cur.filter((b) => b.animeId !== animeId));
+            setLeaving(animeId, false);
+        }, reduceMotion ? 0 : EXIT_MS);
 
         try {
             await remove.mutateAsync({ animeId });
         } catch (e) {
+            window.clearTimeout(timer);
+            setLeaving(animeId, false);
             setItems((cur) => (cur.some((b) => b.animeId === animeId) ? cur : [...cur, before]));
             showError(e);
         }
@@ -175,6 +197,20 @@ export function KanbanBoard({ initialBookmarks }: KanbanBoardProps) {
 
     return (
         <div className="kanban">
+            {/* Live counts (follow moves/removes), handy on phones where columns stack. */}
+            <div className="kanban-summary">
+                <span className="kanban-summary-total">{items.length} anime</span>
+                <ul className="kanban-summary-chips">
+                    {columns.map(({ status, bookmarks }) => (
+                        <li key={status} className="kanban-summary-chip" data-status={status}>
+                            <span className="kanban-dot" aria-hidden="true" />
+                            {BOOKMARK_STATUS_LABELS[status]}
+                            <BumpCount value={bookmarks.length} className="kanban-summary-num" />
+                        </li>
+                    ))}
+                </ul>
+            </div>
+
             {error && <BookmarkErrorMessage error={error} loginHref={LOGIN_HREF} className="kanban-board-error" />}
 
             <DndContext
@@ -191,6 +227,7 @@ export function KanbanBoard({ initialBookmarks }: KanbanBoardProps) {
                         <KanbanColumn
                             key={column.status}
                             column={column}
+                            leavingIds={leavingIds}
                             onMove={handleMove}
                             onRemove={handleRemove}
                         />

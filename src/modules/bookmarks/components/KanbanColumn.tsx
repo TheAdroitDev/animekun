@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { ChevronDown } from "lucide-react";
 
-import { BOOKMARK_STATUS_LABELS, type BoardColumn, type Bookmark } from "../types";
-import { BookmarkCard, BookmarkCardPreview } from "./BookmarkCard";
+import { BOOKMARK_STATUS_LABELS, type BoardColumn } from "../types";
+import { BookmarkCard } from "./BookmarkCard";
 import { BumpCount } from "./BumpCount";
 
 // Cards rendered per "page" of a column (up to 2000 bookmarks per user).
@@ -15,19 +16,21 @@ interface KanbanColumnProps {
     column: BoardColumn;
     // Cards playing their remove animation (still rendered for ~180ms).
     leavingIds: ReadonlySet<string>;
-    // Cards put back by Undo, hidden while the paper ball flies home.
+    // Cards put back by Undo, hidden while the topping flies home.
     returningIds: ReadonlySet<string>;
-    // The card being dragged (for the drop preview), if any.
-    dragging?: Bookmark;
+    // A card from another column is being dragged into this one.
+    isDropTarget: boolean;
     onRemove: (animeId: string) => void;
 }
 
 /**
- * One status column and drop target (the droppable id is the status).
+ * One status column: a sortable list (cards slide apart to open a gap where
+ * the dragged card will land; that gap shows the faint card itself) and a
+ * drop target for empty space and empty columns (droppable id = status).
  * On phones the columns stack and each one can be collapsed; a collapsed
  * column still accepts drops on its header.
  */
-export function KanbanColumn({ column, leavingIds, returningIds, dragging, onRemove }: KanbanColumnProps) {
+export function KanbanColumn({ column, leavingIds, returningIds, isDropTarget, onRemove }: KanbanColumnProps) {
     const { status, bookmarks } = column;
     const label = BOOKMARK_STATUS_LABELS[status];
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -37,10 +40,7 @@ export function KanbanColumn({ column, leavingIds, returningIds, dragging, onRem
     const visible = bookmarks.slice(0, visibleCount);
     const remaining = bookmarks.length - visible.length;
 
-    const { setNodeRef, isOver, active } = useDroppable({ id: status });
-    // Only highlight a column the card can actually move to.
-    const isDropTarget = isOver && active?.data.current?.status !== status;
-    const preview = isDropTarget ? dragging : undefined;
+    const { setNodeRef } = useDroppable({ id: status, data: { type: "column" } });
 
     const className = ["kanban-column", isDropTarget && "is-drop-target", collapsed && "is-collapsed"]
         .filter(Boolean)
@@ -73,41 +73,34 @@ export function KanbanColumn({ column, leavingIds, returningIds, dragging, onRem
             </header>
 
             <div id={bodyId} className="kanban-column-body">
-                {/* Faint copy where the dragged card will land (it goes to the top). */}
-                {preview && (
-                    <div className="kanban-drop-preview" aria-hidden="true">
-                        <BookmarkCardPreview bookmark={preview} />
-                    </div>
-                )}
-
                 {bookmarks.length === 0 ? (
-                    preview ? null : (
                     // One hint per input type; CSS shows the right one.
                     <p className="kanban-column-empty">
                         <span className="kanban-hint-pointer">Drag anime here</span>
                         <span className="kanban-hint-touch">Nothing here yet</span>
                     </p>
-                    )
                 ) : (
-                    <ul className="kanban-column-list">
-                        {visible.map((bookmark) => (
-                            <li
-                                key={bookmark.animeId}
-                                className={
-                                    leavingIds.has(bookmark.animeId)
-                                        ? "is-leaving"
-                                        : returningIds.has(bookmark.animeId)
-                                          ? "is-returning"
-                                          : undefined
-                                }
-                            >
-                                <BookmarkCard
-                                    bookmark={bookmark}
-                                    onRemove={() => onRemove(bookmark.animeId)}
-                                />
-                            </li>
-                        ))}
-                    </ul>
+                    <SortableContext items={visible.map((b) => b.animeId)} strategy={verticalListSortingStrategy}>
+                        <ul className="kanban-column-list">
+                            {visible.map((bookmark) => (
+                                <li
+                                    key={bookmark.animeId}
+                                    className={
+                                        leavingIds.has(bookmark.animeId)
+                                            ? "is-leaving"
+                                            : returningIds.has(bookmark.animeId)
+                                              ? "is-returning"
+                                              : undefined
+                                    }
+                                >
+                                    <BookmarkCard
+                                        bookmark={bookmark}
+                                        onRemove={() => onRemove(bookmark.animeId)}
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    </SortableContext>
                 )}
 
                 {remaining > 0 && (

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useDraggable } from "@dnd-kit/core";
 import { GripVertical, Trash2 } from "lucide-react";
@@ -19,86 +18,73 @@ interface BookmarkCardProps {
  * One card on the board. Presentational: the board owns the mutations, so
  * a move can update the columns instantly.
  *
- * Moving is drag and drop only, from the grip handle: mouse, touch (the
- * handle drags instantly) and keyboard (Tab to the handle, Space, arrows,
- * Space). The rest of the card keeps its links and button, and on phones a
- * swipe on the card still scrolls.
+ * Moving is drag and drop only:
+ * - mouse: grab anywhere on the card (a 4px move starts it, so clicks on
+ *   the title and the trash button still work);
+ * - touch: long-press anywhere (a swipe still scrolls), or the grip, which
+ *   drags instantly;
+ * - keyboard: Tab to the grip, Space, arrows, Space. dnd-kit only starts a
+ *   keyboard drag from the activator (the grip), so Enter on the title
+ *   link still opens the anime.
  */
 export function BookmarkCard({ bookmark, onRemove }: BookmarkCardProps) {
     const { animeId, title, status } = bookmark;
-    const [confirming, setConfirming] = useState(false);
-    const removeRef = useRef<HTMLButtonElement>(null);
-    const confirmRef = useRef<HTMLButtonElement>(null);
     const href = ROUTES.ANIME_DETAIL(animeId);
 
     const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
         id: animeId,
         data: { status, title },
-        disabled: confirming,
     });
 
-    // Keep keyboard focus on the button that replaced the one just pressed.
-    const wasConfirming = useRef(false);
-    useEffect(() => {
-        if (confirming) confirmRef.current?.focus();
-        else if (wasConfirming.current) removeRef.current?.focus();
-        wasConfirming.current = confirming;
-    }, [confirming]);
-
     return (
-        <article ref={setNodeRef} className={`bookmark-card${isDragging ? " is-dragging" : ""}`} data-status={status}>
+        // data-bookmark-id: the board finds this element to toss it / fly it back.
+        // Drag listeners on the whole card; the grip is the keyboard activator.
+        <article
+            ref={setNodeRef}
+            className={`bookmark-card${isDragging ? " is-dragging" : ""}`}
+            data-status={status}
+            data-bookmark-id={animeId}
+            {...listeners}
+        >
             <button
                 ref={setActivatorNodeRef}
                 type="button"
                 className="bookmark-card-handle"
                 {...attributes}
-                {...listeners}
                 aria-label={`Drag ${title}`}
             >
                 <GripVertical size={14} aria-hidden="true" />
             </button>
 
             {/* prefetch={false}: a board can hold hundreds of cards. */}
-            <Link href={href} className="bookmark-card-poster" prefetch={false} tabIndex={-1} aria-hidden="true">
+            <Link
+                href={href}
+                className="bookmark-card-poster"
+                prefetch={false}
+                tabIndex={-1}
+                aria-hidden="true"
+                draggable={false} // no native link drag fighting the card drag
+            >
                 <CardPoster bookmark={bookmark} />
             </Link>
 
-            {/* inert while confirming: focus stays inside the overlay. */}
-            <div className="bookmark-card-body" inert={confirming}>
-                <Link href={href} className="bookmark-card-title" prefetch={false}>
+            <div className="bookmark-card-body">
+                <Link href={href} className="bookmark-card-title" prefetch={false} draggable={false}>
                     {title}
                 </Link>
 
                 <div className="bookmark-card-actions">
+                    {/* No confirm step: the card is tossed into the bin and an Undo toast appears. */}
                     <button
-                        ref={removeRef}
                         type="button"
                         className="bookmark-card-remove"
-                        onClick={() => setConfirming(true)}
+                        onClick={onRemove}
                         aria-label={`Remove ${title}`}
                     >
                         <Trash2 size={14} aria-hidden="true" />
                     </button>
                 </div>
             </div>
-
-            {/* Covers the whole card, so "Remove? Yes / Cancel" always fits. */}
-            {confirming && (
-                <div
-                    className="bookmark-card-confirm"
-                    role="group"
-                    aria-label={`Remove ${title}?`}
-                    onKeyDown={(e) => e.key === "Escape" && setConfirming(false)}
-                >
-                    <span>Remove?</span>
-                    <button ref={confirmRef} type="button" className="bookmark-card-yes" onClick={onRemove}>
-                        Yes
-                    </button>
-                    <button type="button" className="bookmark-card-cancel" onClick={() => setConfirming(false)}>
-                        Cancel
-                    </button>
-                </div>
-            )}
         </article>
     );
 }

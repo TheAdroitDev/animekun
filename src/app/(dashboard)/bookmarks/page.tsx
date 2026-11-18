@@ -22,9 +22,6 @@ export default async function BookmarksPage() {
         <div className="bookmarks-page">
             <header className="bookmarks-page-header">
                 <h1 className="bookmarks-page-title">My Watchlist</h1>
-                <span className="bookmarks-page-kanji" aria-hidden="true">
-                    視聴
-                </span>
             </header>
 
             {bookmarks.length === 0 ? (

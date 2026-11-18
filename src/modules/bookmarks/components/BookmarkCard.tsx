@@ -3,16 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useDraggable } from "@dnd-kit/core";
-import { ChevronDown, GripVertical, Trash2 } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 
 import { ROUTES } from "@/lib/constants/route";
 
-import { BOOKMARK_STATUSES, BOOKMARK_STATUS_LABELS, type Bookmark, type BookmarkStatus } from "../types";
-import { smallPoster } from "../utils/poster";
+import type { Bookmark } from "../types";
+import { cardPoster } from "../utils/poster";
 
 interface BookmarkCardProps {
     bookmark: Bookmark;
-    onMove: (status: BookmarkStatus) => void;
     onRemove: () => void;
 }
 
@@ -20,11 +19,12 @@ interface BookmarkCardProps {
  * One card on the board. Presentational: the board owns the mutations, so
  * a move can update the columns instantly.
  *
- * Dragging starts only from the grip handle: the rest of the card keeps its
- * links, select and button, and on phones a swipe on the card still scrolls.
- * The "Move to…" select stays as the no-drag way to move a card.
+ * Moving is drag and drop only, from the grip handle: mouse, touch (the
+ * handle drags instantly) and keyboard (Tab to the handle, Space, arrows,
+ * Space). The rest of the card keeps its links and button, and on phones a
+ * swipe on the card still scrolls.
  */
-export function BookmarkCard({ bookmark, onMove, onRemove }: BookmarkCardProps) {
+export function BookmarkCard({ bookmark, onRemove }: BookmarkCardProps) {
     const { animeId, title, status } = bookmark;
     const [confirming, setConfirming] = useState(false);
     const removeRef = useRef<HTMLButtonElement>(null);
@@ -63,57 +63,42 @@ export function BookmarkCard({ bookmark, onMove, onRemove }: BookmarkCardProps) 
                 <CardPoster bookmark={bookmark} />
             </Link>
 
-            <div className="bookmark-card-body">
+            {/* inert while confirming: focus stays inside the overlay. */}
+            <div className="bookmark-card-body" inert={confirming}>
                 <Link href={href} className="bookmark-card-title" prefetch={false}>
                     {title}
                 </Link>
 
-                {confirming ? (
-                    <div
-                        className="bookmark-card-confirm"
-                        onKeyDown={(e) => e.key === "Escape" && setConfirming(false)}
+                <div className="bookmark-card-actions">
+                    <button
+                        ref={removeRef}
+                        type="button"
+                        className="bookmark-card-remove"
+                        onClick={() => setConfirming(true)}
+                        aria-label={`Remove ${title}`}
                     >
-                        <span>Remove?</span>
-                        <button ref={confirmRef} type="button" className="bookmark-card-yes" onClick={onRemove}>
-                            Yes
-                        </button>
-                        <button type="button" className="bookmark-card-cancel" onClick={() => setConfirming(false)}>
-                            Cancel
-                        </button>
-                    </div>
-                ) : (
-                    <div className="bookmark-card-actions">
-                        {/* Wrapper draws a themed chevron (the native arrow is hidden). */}
-                        <span className="bookmark-card-move-wrap">
-                            <select
-                                className="bookmark-card-move"
-                                aria-label={`Move ${title} to another list`}
-                                value=""
-                                onChange={(e) => onMove(e.target.value as BookmarkStatus)}
-                            >
-                                <option value="" disabled>
-                                    Move to…
-                                </option>
-                                {BOOKMARK_STATUSES.filter((s) => s !== status).map((s) => (
-                                    <option key={s} value={s}>
-                                        {BOOKMARK_STATUS_LABELS[s]}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown size={14} className="bookmark-card-move-chevron" aria-hidden="true" />
-                        </span>
-                        <button
-                            ref={removeRef}
-                            type="button"
-                            className="bookmark-card-remove"
-                            onClick={() => setConfirming(true)}
-                            aria-label={`Remove ${title}`}
-                        >
-                            <Trash2 size={14} aria-hidden="true" />
-                        </button>
-                    </div>
-                )}
+                        <Trash2 size={14} aria-hidden="true" />
+                    </button>
+                </div>
             </div>
+
+            {/* Covers the whole card, so "Remove? Yes / Cancel" always fits. */}
+            {confirming && (
+                <div
+                    className="bookmark-card-confirm"
+                    role="group"
+                    aria-label={`Remove ${title}?`}
+                    onKeyDown={(e) => e.key === "Escape" && setConfirming(false)}
+                >
+                    <span>Remove?</span>
+                    <button ref={confirmRef} type="button" className="bookmark-card-yes" onClick={onRemove}>
+                        Yes
+                    </button>
+                    <button type="button" className="bookmark-card-cancel" onClick={() => setConfirming(false)}>
+                        Cancel
+                    </button>
+                </div>
+            )}
         </article>
     );
 }
@@ -138,21 +123,28 @@ export function BookmarkCardPreview({ bookmark }: { bookmark: Bookmark }) {
     );
 }
 
+/**
+ * Plain <picture>/<img>: straight from the MAL CDN, never through
+ * /_next/image. Desktop (>640px, bigger card) gets MAL's medium size;
+ * phones get the thumbnail (medium on 2× screens). Each device downloads
+ * only one of them.
+ */
 function CardPoster({ bookmark }: { bookmark: Bookmark }) {
-    const poster = bookmark.posterUrl ? smallPoster(bookmark.posterUrl) : null;
+    const poster = bookmark.posterUrl ? cardPoster(bookmark.posterUrl) : null;
     if (!poster) return <span className="bookmark-card-no-img">No image</span>;
     return (
-        // Plain <img>: straight from the MAL CDN, never through /_next/image.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-            src={poster.src}
-            srcSet={poster.srcSet}
-            alt=""
-            width={56}
-            height={80}
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-        />
+        <picture>
+            {poster.desktop && <source media="(min-width: 641px)" srcSet={poster.desktop} />}
+            <img
+                src={poster.src}
+                srcSet={poster.srcSet}
+                alt=""
+                width={56}
+                height={80}
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+            />
+        </picture>
     );
 }

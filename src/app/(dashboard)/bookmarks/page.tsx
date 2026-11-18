@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BookmarkPlus } from "lucide-react";
 
 import { requireSession } from "@/lib/auth/session";
 import { ROUTES } from "@/lib/constants/route";
@@ -21,19 +22,22 @@ export default async function BookmarksPage() {
         <div className="bookmarks-page">
             <header className="bookmarks-page-header">
                 <h1 className="bookmarks-page-title">My Watchlist</h1>
-                <p className="bookmarks-page-count">
-                    {bookmarks.length} anime
-                </p>
+                <span className="bookmarks-page-kanji" aria-hidden="true">
+                    視聴
+                </span>
             </header>
 
             {bookmarks.length === 0 ? (
                 <div className="bookmarks-page-empty">
-                    <p>Your watchlist is empty. Browse anime and add some!</p>
+                    <BookmarkPlus size={32} className="bookmarks-page-empty-icon" aria-hidden="true" />
+                    <p className="bookmarks-page-empty-title">Your watchlist is empty</p>
+                    <p className="bookmarks-page-empty-text">Browse anime and add some!</p>
                     <Link href={ROUTES.SEARCH} className="bookmarks-page-empty-link">
                         Browse anime
                     </Link>
                 </div>
             ) : (
+                // The board shows the live total and per-status counts.
                 <KanbanBoard initialBookmarks={bookmarks} />
             )}
         </div>

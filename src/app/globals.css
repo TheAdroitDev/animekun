@@ -2647,9 +2647,14 @@ button {
   outline-offset: 1px;
 }
 
-/* The original card stays in place, faded, while its copy is dragged. */
+/* While its copy is dragged, the card itself IS the gap where it will land:
+   faint, dashed in the colour of the column it's in now (data-status
+   follows it as it moves between columns). */
 .bookmark-card.is-dragging {
-  opacity: 0.35;
+  opacity: 0.4;
+  border-style: dashed;
+  border-color: var(--status-color, var(--border-hover));
+  box-shadow: none;
 }
 
 .bookmark-card.is-overlay {
@@ -2691,20 +2696,12 @@ button {
   }
 }
 
-/* Faint copy of the dragged card where it will land (top of the column),
-   outlined in the TARGET column's colour (the wrapper has no data-status). */
-.kanban-drop-preview {
-  border: 1.5px dashed var(--status-color, var(--border-hover));
-  border-radius: 12px;
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.kanban-drop-preview .bookmark-card {
-  border-color: transparent;
-  box-shadow: none;
-  transform: none;
-  animation: none;
+/* Reduced motion: cards jump into place instead of sliding apart
+   (overrides the inline transition dnd-kit/sortable sets). */
+@media (prefers-reduced-motion: reduce) {
+  .kanban-column-list .bookmark-card {
+    transition: none !important;
+  }
 }
 
 .kanban-column-body {
@@ -3365,17 +3362,6 @@ button {
     transition: grid-template-rows 0.18s ease, margin-bottom 0.18s ease;
   }
 
-  /* Drop preview fades in when the card enters a column. */
-  .kanban-drop-preview {
-    transition: opacity 0.15s ease, translate 0.15s ease;
-  }
-
-  @starting-style {
-    .kanban-drop-preview {
-      opacity: 0;
-      translate: 0 -4px;
-    }
-  }
 
   /* Toast stack: a new toast rises into the front while the others ease
      back a step; fanning out/in uses the same soft curve. */

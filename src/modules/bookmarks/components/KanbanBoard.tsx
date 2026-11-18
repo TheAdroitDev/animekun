@@ -228,7 +228,6 @@ export function KanbanBoard({ initialBookmarks }: KanbanBoardProps) {
                             key={column.status}
                             column={column}
                             leavingIds={leavingIds}
-                            onMove={handleMove}
                             onRemove={handleRemove}
                         />
                     ))}

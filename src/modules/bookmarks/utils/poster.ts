@@ -5,16 +5,16 @@
 const MAL_POSTER = /^(https:\/\/cdn\.myanimelist\.net\/images\/.+\/\d+)[lt]?\.(jpg|webp)$/;
 
 /**
- * Small poster for a 48px-wide card: the thumbnail on normal screens, the
- * medium size on 2× screens. URLs that aren't MAL posters (e.g. ImageKit)
- * come back unchanged, with no srcSet.
+ * Poster sources for a board card:
+ * - phones (56px wide): the thumbnail, medium on 2× screens (src + srcSet);
+ * - desktop (72px wide): the medium size, sharp at 2× too (desktop).
+ * URLs that aren't MAL posters (e.g. ImageKit) come back unchanged.
  */
-export function smallPoster(url: string): { src: string; srcSet?: string } {
+export function cardPoster(url: string): { src: string; srcSet?: string; desktop?: string } {
     const match = MAL_POSTER.exec(url);
     if (!match) return { src: url };
     const [, base, ext] = match;
-    return {
-        src: `${base}t.${ext}`,
-        srcSet: `${base}t.${ext} 1x, ${base}.${ext} 2x`,
-    };
+    const thumb = `${base}t.${ext}`;
+    const medium = `${base}.${ext}`;
+    return { src: thumb, srcSet: `${thumb} 1x, ${medium} 2x`, desktop: medium };
 }

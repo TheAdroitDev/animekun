@@ -28,5 +28,23 @@ export const removeBookmarkSchema = z.object({
     animeId: animeIdSchema,
 });
 
+// Board drag and drop: a card's column and its place in it (one UPDATE).
+const positionSchema = z.number().int().min(-2_000_000_000).max(2_000_000_000);
+
+export const moveBookmarkSchema = z.object({
+    animeId: animeIdSchema,
+    status: z.enum(BOOKMARK_STATUSES),
+    position: positionSchema,
+});
+
+// Rare: a column ran out of room between two cards, so it's renumbered
+// from this order (one UPDATE … FROM unnest). Capped like the bookmark limit.
+export const reorderColumnSchema = z.object({
+    status: z.enum(BOOKMARK_STATUSES),
+    animeIds: z.array(animeIdSchema).min(1).max(2000),
+});
+
 export type SetBookmarkStatusInput = z.infer<typeof setBookmarkStatusSchema>;
 export type RemoveBookmarkInput = z.infer<typeof removeBookmarkSchema>;
+export type MoveBookmarkInput = z.infer<typeof moveBookmarkSchema>;
+export type ReorderColumnInput = z.infer<typeof reorderColumnSchema>;

@@ -19,16 +19,6 @@ export const BOOKMARK_STATUS_LABELS: Record<BookmarkStatus, string> = {
     on_hold: "On Hold",
     dropped: "Dropped",
 };
-
-// Decorative kanji behind each column header (aria-hidden).
-export const BOOKMARK_STATUS_KANJI: Record<BookmarkStatus, string> = {
-    watching: "視聴中",
-    completed: "完了",
-    plan_to_watch: "予定",
-    on_hold: "保留",
-    dropped: "中止",
-};
-
 // A bookmark as the UI sees it (no row id or user id).
 export interface Bookmark {
     animeId: string;

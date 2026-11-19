@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
     Sun01Icon,
     Moon02Icon,
     Menu01Icon,
     Cancel01Icon,
+    Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { useSession } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/constants/route";
@@ -42,10 +44,36 @@ const navLinks: { label: string; href: string; prefetch?: false }[] = [
 // run a server function on every page view.
 const bookmarksLink = { label: "Bookmarks", href: ROUTES.DASHBOARD.BOOKMARKS, prefetch: false as const };
 
+// ── Keyboard shortcuts: Ctrl/⌘ + K = search, D = switch theme ──
+
+/** Typing in a field: single-key shortcuts (D) must not fire. */
+function isTypingTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+}
+
+// ⌘ on Apple devices, Ctrl elsewhere. Read in the browser only (the server
+// render says "Ctrl"), via useSyncExternalStore so there's no hydration mismatch.
+const noSubscribe = () => () => {};
+const readIsMac = () => /Mac|iPhone|iPad/.test(navigator.userAgent);
+const serverIsMac = () => false;
+
+/** On /search already: focus its field (inside the key press / tap, so phones show the keyboard). */
+function focusSearchField(): boolean {
+    const field = document.querySelector<HTMLInputElement>(".search-input-field");
+    if (!field) return false;
+    field.focus();
+    field.scrollIntoView({ block: "center", behavior: "smooth" });
+    return true;
+}
+
 export default function Navbar() {
     // Same shared session state as UserMenu: no extra request.
     const { data: session } = useSession();
     const links = session ? [...navLinks, bookmarksLink] : navLinks;
+    const pathname = usePathname();
+    const router = useRouter();
+    const isMac = useSyncExternalStore(noSubscribe, readIsMac, serverIsMac);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [isDark, setIsDark] = useState(false);
@@ -65,13 +93,39 @@ export default function Navbar() {
         });
     }, []);
 
+    // Reads the live theme from <html> (not state), so quick repeated
+    // presses of D always flip it, even before React re-renders.
     const toggleTheme = useCallback(() => {
-        const next = isDark ? "light" : "dark";
-        document.documentElement.setAttribute("data-theme", next);
-        document.documentElement.style.colorScheme = next; // match the head script in layout.tsx
+        const root = document.documentElement;
+        const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        root.style.colorScheme = next; // match the head script in layout.tsx
         localStorage.setItem("theme", next);
-        setIsDark(!isDark);
-    }, [isDark]);
+        setIsDark(next === "dark");
+    }, []);
+
+    // Ctrl/⌘ + K: go to search (or focus it when already there). D: switch
+    // theme, except while typing in a field. One listener for the whole site.
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.defaultPrevented || e.isComposing) return;
+            const key = e.key.toLowerCase();
+
+            if (key === "k" && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+                e.preventDefault(); // the browser's own Ctrl+K (address-bar search)
+                setMobileOpen(false);
+                if (pathname === ROUTES.SEARCH && focusSearchField()) return;
+                router.push(`${ROUTES.SEARCH}#search`);
+                return;
+            }
+
+            if (key === "d" && !e.metaKey && !e.ctrlKey && !e.altKey && !e.repeat && !isTypingTarget(e.target)) {
+                toggleTheme();
+            }
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [pathname, router, toggleTheme]);
 
     // Lock body scroll when mobile menu is open
     useEffect(() => {
@@ -122,18 +176,41 @@ export default function Navbar() {
                         ))}
                     </ul>
 
-                    {/* ── Desktop Actions ── */}
+                    {/* ── Actions: theme (desktop), search (phones), account (both) ── */}
                     <div className="navbar-actions">
+                        {/* One tap / click / Ctrl+K to search. #search focuses the
+                            field on arrival; already on /search, focus it right here
+                            (inside the tap, so iOS opens the keyboard too).
+                            Desktop: "Search ⌘K" pill; phones: just the icon. */}
+                        <Link
+                            href={`${ROUTES.SEARCH}#search`}
+                            className="navbar-search-btn"
+                            aria-label="Search anime"
+                            aria-keyshortcuts="Control+K Meta+K"
+                            onClick={(e) => {
+                                if (pathname === ROUTES.SEARCH && focusSearchField()) e.preventDefault();
+                            }}
+                        >
+                            <HugeiconsIcon icon={Search01Icon} size={18} strokeWidth={1.8} />
+                            <span className="navbar-search-label" aria-hidden="true">
+                                Search
+                            </span>
+                            <kbd className="navbar-kbd" aria-hidden="true">
+                                {isMac ? "⌘" : "Ctrl"} K
+                            </kbd>
+                        </Link>
+
                         <button
-                            className="theme-toggle"
+                            className="theme-toggle navbar-theme-desktop"
                             onClick={toggleTheme}
                             aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-                            title={isDark ? "Light mode" : "Dark mode"}
+                            aria-keyshortcuts="D"
+                            title={isDark ? "Light mode (D)" : "Dark mode (D)"}
                         >
                             <ThemeIcons />
                         </button>
 
-                        <UserMenu variant="navbar" />
+                        <UserMenu />
                     </div>
 
                     {/* ── Mobile Hamburger ── */}
@@ -231,8 +308,7 @@ export default function Navbar() {
                             {isDark ? "Light mode" : "Dark mode"}
                         </span>
                     </button>
-
-                    <UserMenu variant="drawer" onAction={() => setMobileOpen(false)} />
+                    {/* The account lives in the top bar on phones too. */}
                 </div>
             </aside>
         </>

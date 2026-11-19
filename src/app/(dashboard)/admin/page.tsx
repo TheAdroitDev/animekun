@@ -6,6 +6,7 @@ import {
     Activity,
     ArrowUpRight,
     BarChart3,
+    Bookmark,
     Database,
     MessageSquareText,
     Triangle,
@@ -15,8 +16,9 @@ import {
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { feedback, sessions, users } from "@/db/schema";
+import { bookmarks, feedback, sessions, users } from "@/db/schema";
 import { getEnv } from "@/lib/config/env";
+import { BOOKMARK_STATUSES, BOOKMARK_STATUS_LABELS } from "@/modules/bookmarks/types";
 
 // Private page: dynamic (reads the session), never indexed.
 // Anyone who isn't ADMIN_EMAIL gets a plain 404, so the page stays hidden.
@@ -57,10 +59,28 @@ async function getAdminStats() {
     const weekAgo = new Date(now.getTime() - 7 * DAY_MS);
     const dayAgo = new Date(now.getTime() - DAY_MS);
 
-    const [[total], [newThisWeek], [signedIn], [feedbackTotal], latest] = await Promise.all([
+    const [
+        [total],
+        [newThisWeek],
+        [signedIn],
+        [active24h],
+        [bookmarkTotal],
+        [bookmarksThisWeek],
+        byStatus,
+        [feedbackTotal],
+        latest,
+    ] = await Promise.all([
         db.select({ n: count() }).from(users),
         db.select({ n: count() }).from(users).where(gt(users.createdAt, weekAgo)),
         db.select({ n: countDistinct(sessions.userId) }).from(sessions).where(gt(sessions.expiresAt, now)),
+        // Approximate "active today": Better Auth sets updated_at when a session
+        // is created and when it refreshes (at most once a day per session), so
+        // this counts users who signed in or came back in the last 24h. A visit
+        // within a day of the last refresh doesn't move it. No request logging.
+        db.select({ n: countDistinct(sessions.userId) }).from(sessions).where(gt(sessions.updatedAt, dayAgo)),
+        db.select({ n: count() }).from(bookmarks),
+        db.select({ n: count() }).from(bookmarks).where(gt(bookmarks.addedAt, weekAgo)),
+        db.select({ status: bookmarks.status, n: count() }).from(bookmarks).groupBy(bookmarks.status),
         db.select({ n: count() }).from(feedback),
         db
             .select({ id: users.id, name: users.name, email: users.email, avatarUrl: users.avatarUrl, createdAt: users.createdAt })
@@ -69,14 +89,24 @@ async function getAdminStats() {
             .limit(6),
     ]);
 
+    // Every column, in board order, even when it has no bookmarks yet.
+    const statusCounts = new Map(byStatus.map((row) => [row.status, row.n]));
+
     return {
         today: now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }),
         stats: [
             { label: "Total users", value: total.n, hint: `+${newThisWeek.n} this week`, icon: Users },
             { label: "New this week", value: newThisWeek.n, hint: "Last 7 days", icon: UserPlus },
-            { label: "Signed in", value: signedIn.n, hint: "Active sessions", icon: Activity },
+            { label: "Active (24h)", value: active24h.n, hint: "Signed in or returned", icon: Activity },
+            { label: "Signed in", value: signedIn.n, hint: "Active sessions", icon: Users },
+            { label: "Bookmarks", value: bookmarkTotal.n, hint: `+${bookmarksThisWeek.n} this week`, icon: Bookmark },
             { label: "Feedback", value: feedbackTotal.n, hint: "Widget responses", icon: MessageSquareText },
         ],
+        bookmarkStatuses: BOOKMARK_STATUSES.map((status) => ({
+            status,
+            label: BOOKMARK_STATUS_LABELS[status],
+            n: statusCounts.get(status) ?? 0,
+        })),
         latest: latest.map((u) => ({ ...u, isNew: u.createdAt > dayAgo })),
     };
 }
@@ -86,7 +116,7 @@ export default async function AdminPage() {
     const adminEmail = getEnv().ADMIN_EMAIL.toLowerCase();
     if (!session || !adminEmail || session.user.email.toLowerCase() !== adminEmail) notFound();
 
-    const { today, stats, latest } = await getAdminStats();
+    const { today, stats, bookmarkStatuses, latest } = await getAdminStats();
     const firstName = session.user.name.split(" ")[0];
 
     return (
@@ -155,24 +185,39 @@ export default async function AdminPage() {
                     )}
                 </section>
 
-                {/* Dashboards */}
-                <section className="admin-card" aria-labelledby="admin-traffic">
-                    <h2 id="admin-traffic" className="admin-card-title">Traffic &amp; requests</h2>
-                    <div className="admin-links">
-                        {LINKS.map(({ label, hint, href, icon: Icon }) => (
-                            <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="admin-link">
-                                <span className="admin-link-icon">
-                                    <Icon size={18} />
-                                </span>
-                                <span className="admin-link-text">
-                                    <span className="admin-link-label">{label}</span>
-                                    <span className="admin-link-hint">{hint}</span>
-                                </span>
-                                <ArrowUpRight size={16} className="admin-link-arrow" />
-                            </a>
-                        ))}
-                    </div>
-                </section>
+                <div className="admin-side">
+                    {/* Bookmarks per Kanban column */}
+                    <section className="admin-card" aria-labelledby="admin-bookmarks">
+                        <h2 id="admin-bookmarks" className="admin-card-title">Bookmarks by status</h2>
+                        <ul className="admin-statuses">
+                            {bookmarkStatuses.map(({ status, label, n }) => (
+                                <li key={status} className="admin-status">
+                                    <span className="admin-status-label">{label}</span>
+                                    <span className="admin-status-count">{n.toLocaleString("en-US")}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+
+                    {/* Dashboards */}
+                    <section className="admin-card" aria-labelledby="admin-traffic">
+                        <h2 id="admin-traffic" className="admin-card-title">Traffic &amp; requests</h2>
+                        <div className="admin-links">
+                            {LINKS.map(({ label, hint, href, icon: Icon }) => (
+                                <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="admin-link">
+                                    <span className="admin-link-icon">
+                                        <Icon size={18} />
+                                    </span>
+                                    <span className="admin-link-text">
+                                        <span className="admin-link-label">{label}</span>
+                                        <span className="admin-link-hint">{hint}</span>
+                                    </span>
+                                    <ArrowUpRight size={16} className="admin-link-arrow" />
+                                </a>
+                            ))}
+                        </div>
+                    </section>
+                </div>
             </div>
         </div>
     );

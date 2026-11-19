@@ -254,6 +254,7 @@ export default function Navbar() {
                             width={36}
                             height={36}
                             className="navbar-logo-img navbar-logo-img-dark"
+                            loading="eager"
                             unoptimized
                         />
                         <Image
@@ -262,6 +263,7 @@ export default function Navbar() {
                             width={36}
                             height={36}
                             className="navbar-logo-img navbar-logo-img-light"
+                            loading="eager"
                             unoptimized
                         />
                     </Link>

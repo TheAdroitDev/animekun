@@ -29,6 +29,19 @@ export function SearchBar({
     const paramQuery = searchParams.get("q") ?? defaultValue;
     const [inputValue, setInputValue] = useState(paramQuery);
     const isMounted = useRef(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Arrived from the navbar's search icon (/search#search): focus the field
+    // so the keyboard comes up, then drop the hash so a reload or Back
+    // doesn't do it again. Client-only, so /search stays a static page.
+    useEffect(() => {
+        if (window.location.hash !== "#search") return;
+        inputRef.current?.focus({ preventScroll: true });
+        inputRef.current?.scrollIntoView({ block: "center" });
+        const url = new URL(window.location.href);
+        url.hash = "";
+        window.history.replaceState(window.history.state, "", url);
+    }, []);
 
     // Sync input when the URL changes externally (back/forward, chip clear).
     // Adjusting state during render (instead of in an effect) avoids an extra
@@ -109,6 +122,7 @@ export function SearchBar({
                 />
 
                 <input
+                    ref={inputRef}
                     type="search"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}

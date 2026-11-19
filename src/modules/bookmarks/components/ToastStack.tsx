@@ -58,7 +58,9 @@ export function ToastStack({ toasts, onExpire }: ToastStackProps) {
             aria-label="Notifications"
             onPointerEnter={(e) => e.pointerType === "mouse" && setExpanded(true)}
             onPointerLeave={(e) => e.pointerType === "mouse" && setExpanded(false)}
-            onFocus={() => setExpanded(true)}
+            // Keyboard focus only: a click on Undo also focuses it, and that
+            // must not freeze the other toasts' timers.
+            onFocus={(e) => e.target.matches(":focus-visible") && setExpanded(true)}
             onBlur={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setExpanded(false);
             }}

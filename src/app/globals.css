@@ -3211,18 +3211,30 @@ button {
   outline-offset: 2px;
 }
 
-/* Time left: drains right to left. The animation IS the toast's timer
+/* Time left: a soft red fill behind the whole toast that drains right to
+   left (with a brighter leading edge). The animation IS the toast's timer
    (animationend closes it), so it runs even with reduced motion, and it
    pauses for every toast while the stack is open. */
 .stack-toast-progress {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 3px;
-  background: var(--accent);
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 10%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 20%, transparent) calc(100% - 3px),
+    color-mix(in srgb, var(--accent) 55%, transparent) calc(100% - 3px)
+  );
   transform-origin: left center;
+  pointer-events: none;
   animation: stack-toast-drain 5.2s linear forwards;
+}
+
+/* Text and Undo sit above the fill. */
+.stack-toast-text,
+.stack-toast-btn {
+  position: relative;
+  z-index: 1;
 }
 
 .toast-stack.is-expanded .stack-toast-progress {

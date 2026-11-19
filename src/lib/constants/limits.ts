@@ -3,9 +3,4 @@ export const LIMITS = {
         AI_REQUESTS_PER_DAY: 5,
         BOOKMARKS_PER_USER: 2000,
     },
-
-    PREMIUM: {
-        AI_REQUESTS_PER_DAY: Infinity,
-        BOOKMARKS_PER_USER: 2000,
-    },
 } as const

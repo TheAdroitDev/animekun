@@ -9,27 +9,19 @@ import { signOut, useSession } from "@/lib/auth-client";
 import { resetAnalyticsIdentity, trackEvent } from "@/components/analytics/TracwellAnalytics";
 import { ROUTES } from "@/lib/constants/route";
 
-interface UserMenuProps {
-    variant: "navbar" | "drawer";
-    // Called after a link/action is used (e.g. to close the mobile drawer).
-    onAction?: () => void;
-}
-
 /**
- * Auth area of the Navbar: Login link when logged out, avatar menu when
- * logged in, and a same-size placeholder while the session loads (no
- * "Login" flash, no layout shift).
+ * Auth area of the Navbar (desktop and phones): Login link when logged
+ * out, avatar menu when logged in, and a same-size placeholder while the
+ * session loads (no "Login" flash, no layout shift).
  *
  * Menu items for Profile/Settings are added in the phases that build those
- * pages — no dead links until then. (The mobile drawer gets Bookmarks from
- * the Navbar's own link list.)
+ * pages — no dead links until then.
  */
-export function UserMenu({ variant, onAction }: UserMenuProps) {
+export function UserMenu() {
     const { data: session, isPending } = useSession();
     const router = useRouter();
 
     const handleSignOut = async () => {
-        onAction?.();
         await signOut();
         trackEvent("sign_out_completed");
         resetAnalyticsIdentity();
@@ -38,44 +30,18 @@ export function UserMenu({ variant, onAction }: UserMenuProps) {
     };
 
     if (isPending) {
-        return (
-            <span
-                className={`user-menu-placeholder user-menu-placeholder-${variant}`}
-                aria-hidden="true"
-            />
-        );
+        return <span className="user-menu-placeholder user-menu-placeholder-navbar" aria-hidden="true" />;
     }
 
     if (!session) {
         return (
-            <Link
-                href={ROUTES.AUTH.LOGIN}
-                className={`navbar-login-btn ${variant === "drawer" ? "navbar-login-btn-full" : ""}`}
-                onClick={onAction}
-            >
+            <Link href={ROUTES.AUTH.LOGIN} className="navbar-login-btn">
                 Login
             </Link>
         );
     }
 
     const { name, email, image } = session.user;
-
-    if (variant === "drawer") {
-        return (
-            <div className="user-menu-drawer">
-                <div className="user-menu-identity">
-                    <UserAvatar name={name} email={email} image={image} />
-                    <div className="user-menu-identity-text">
-                        <span className="user-menu-name">{name}</span>
-                        <span className="user-menu-email">{email}</span>
-                    </div>
-                </div>
-                <button type="button" className="user-menu-signout-full" onClick={handleSignOut}>
-                    Log out
-                </button>
-            </div>
-        );
-    }
 
     return (
         <UserDropdown name={name} email={email} image={image} onSignOut={handleSignOut} />

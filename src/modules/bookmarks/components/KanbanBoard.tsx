@@ -44,7 +44,6 @@ import {
 } from "../types";
 import {
     POP_OUT_MS,
-    RESTORE_MS,
     popFromBin,
     prefersReducedMotion,
     randomTopping,
@@ -307,7 +306,11 @@ export function KanbanBoard({ initialBookmarks }: KanbanBoardProps) {
 
         setError(null);
         const cardEl = findCard(animeId);
-        const hadFocus = !!cardEl?.contains(document.activeElement);
+        // Only keyboard users get focus moved to Undo. A mouse click / tap also
+        // focuses the trash button, but moving focus then would open the toast
+        // stack and pause every timer until the next click.
+        const focused = document.activeElement;
+        const hadFocus = !!cardEl && !!focused && cardEl.contains(focused) && focused.matches(":focus-visible");
         const bin = binRef.current;
         const save = remove.mutateAsync({ animeId }); // starts now, in parallel with the toss
         const topping = randomTopping(); // Undo brings back the same one
@@ -434,17 +437,12 @@ export function KanbanBoard({ initialBookmarks }: KanbanBoardProps) {
         void bringBack([{ bookmark: toast.bookmark, topping: toast.topping }]);
     }
 
-    // Bowl tapped twice: everything removed this visit comes back, with ONE toast.
-    async function handleRestoreAll() {
+    // Bowl tapped twice: everything removed this visit comes back. No toast:
+    // the cards flying home are the feedback.
+    function handleRestoreAll() {
         if (removed.length === 0) return;
-        const entries = removed;
         dismissToasts((t) => t.kind === "removed");
-        const flights = prefersReducedMotion() ? 0 : (entries.length - 1) * RESTORE_STAGGER_MS + RESTORE_MS;
-        const [restored] = await Promise.all([
-            bringBack(entries),
-            new Promise((resolve) => window.setTimeout(resolve, flights)),
-        ]);
-        if (restored > 0) pushToast({ kind: "info", text: `Brought back ${restored} anime`, focus: false });
+        void bringBack(removed);
     }
 
     // ── Drag and drop: reorder within a column, or move to an exact spot in

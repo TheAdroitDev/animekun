@@ -4,10 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 
 import type { ApiResponseType } from "@/types/api";
 
-import type { Recommendation } from "../types";
+import type { ResolvedRecommendation } from "../types";
 
 export interface GenerateResult {
-    recommendations: Recommendation[];
+    recommendations: ResolvedRecommendation[];
     remaining: number;
 }
 

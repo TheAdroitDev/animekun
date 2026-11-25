@@ -100,7 +100,10 @@ export default function Footer() {
                                 <ul className="footer-column-links">
                                     {group.links.map((link) => (
                                         <li key={link.label}>
-                                            <Link href={link.href} className="footer-link">
+                                            {/* No prefetch: the footer is on every page, and
+                                                protected links (/generate, /quiz, /bookmarks)
+                                                would run the proxy or a function per visitor. */}
+                                            <Link href={link.href} className="footer-link" prefetch={false}>
                                                 {link.label}
                                             </Link>
                                         </li>

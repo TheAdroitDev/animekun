@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 
-import { accounts, aiRequests, sessions, userPreferences, userRoleEnum, userTierEnum, users, verifications, } from "./users";
+import { accounts, aiUsage, sessions, userPreferences, userRoleEnum, userTierEnum, users, verifications, } from "./users";
 import { bookmarkStatusEnum, bookmarks, } from "./bookmarks";
 import { achievements, quizScores, } from "./quiz";
 import { chatMessages, notifications, } from "./chat";
@@ -8,7 +8,7 @@ import { feedback } from "./feedback";
 
 // Enums must be exported here too: drizzle-kit only sees what this file
 // exports, and would otherwise try to DROP enums that exist in the database.
-export { userRoleEnum, userTierEnum, bookmarkStatusEnum, users, accounts, sessions, verifications, userPreferences, bookmarks, quizScores, achievements, chatMessages, notifications, aiRequests, feedback }
+export { userRoleEnum, userTierEnum, bookmarkStatusEnum, users, accounts, sessions, verifications, userPreferences, bookmarks, quizScores, achievements, chatMessages, notifications, aiUsage, feedback }
 
 
 export const usersRelations = relations(users, ({ many, one }) => ({
@@ -18,7 +18,6 @@ export const usersRelations = relations(users, ({ many, one }) => ({
     bookmarks: many(bookmarks),
     quizScores: many(quizScores),
     achievements: many(achievements),
-    aiRequests: many(aiRequests),
     sentMessages: many(chatMessages, { // important distinction in foreign keys
         relationName: "sender",
     }),
@@ -27,16 +26,6 @@ export const usersRelations = relations(users, ({ many, one }) => ({
     }),
     notifications: many(notifications),
 }));
-
-export const aiRequestsRelations = relations(
-    aiRequests,
-    ({ one }) => ({
-        user: one(users, {
-            fields: [aiRequests.userId],
-            references: [users.id],
-        }),
-    }),
-);
 
 // An account belongs to one user:
 export const accountsRelations = relations(accounts, ({ one }) => ({

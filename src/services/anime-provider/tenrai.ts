@@ -533,6 +533,61 @@ export class TenraiProvider implements AnimeProvider {
         }
     }
 
+    // Find by title (AI Generate, step 8.7)
+    // One search; a result counts only if one of its titles (default,
+    // English, synonyms…) equals the wanted title once normalised. A wrong
+    // link is worse than no link. Hits and misses are cached for a day
+    // (per instance, a speed-up only); errors are not cached.
+
+    async findByTitle(
+        title: string,
+    ): Promise<Anime | null> {
+        const wanted = normalizeTitle(title);
+        const cacheKey = `anime:title:${wanted}`;
+
+        const cached = this.cache.get<{ anime: Anime | null }>(cacheKey);
+        if (cached) return cached.anime;
+
+        try {
+            const response =
+                await this.client.get<TenraiAnimeListResponse>(
+                    "/anime",
+                    {
+                        // Tenrai's own relevance order. Ordering by
+                        // popularity let popular partial matches ("Pocket
+                        // Monsters"…) crowd out "Monster". No sfw=true: it
+                        // also hides R+ titles like Monster (2004); only Rx
+                        // (hentai) is excluded, below.
+                        params: { q: title, limit: 10 },
+                        timeout: SECONDARY_TIMEOUT_MS,
+                    },
+                );
+
+            // Several anime can share a title ("Monster" 2004 vs a 2019
+            // short): the AI means the well-known one, so the most popular
+            // exact match wins (MAL popularity rank: lower = more popular).
+            const match = response.data.data
+                .filter((entry) => !entry.rating?.startsWith("Rx"))
+                .filter((entry) =>
+                    [
+                        entry.title,
+                        entry.title_english,
+                        ...(entry.titles?.map((t) => t.title) ?? []),
+                    ].some((t) => t != null && normalizeTitle(t) === wanted),
+                )
+                .sort((a, b) => (a.popularity || Infinity) - (b.popularity || Infinity))[0];
+
+            const anime = match ? this.mapAnime(match) : null;
+            this.cache.set(cacheKey, { anime }, 24 * 60 * 60 * 1000);
+            return anime;
+        } catch (error) {
+            throw this.normalizeError(
+                error,
+                `Failed to find anime by title "${title}"`,
+            );
+        }
+    }
+
     // Mapping
 
     private mapAnime(
@@ -680,4 +735,14 @@ export class TenraiProvider implements AnimeProvider {
 
         return new Error(fallbackMessage);
     }
+}
+// "Steins;Gate" and "steins gate", "Shinsekai Yori" and "Shinsekai yori"
+// compare equal: lower case, no accents, punctuation as spaces.
+function normalizeTitle(title: string): string {
+    return title
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .trim();
 }

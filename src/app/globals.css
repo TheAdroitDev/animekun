@@ -6931,6 +6931,15 @@ input[type="search"]::-webkit-search-results-decoration {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.admin-card-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
 }
 
 .admin-empty {

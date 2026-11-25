@@ -1,9 +1,9 @@
 import { type NextRequest } from "next/server";
 
 import { getServerSession } from "@/lib/auth/session";
-import { LIMITS } from "@/lib/constants/limits";
 import { ApiResponse } from "@/lib/utils/api-response";
 import { consumeDailyLimit, refundDailyLimit } from "@/lib/utils/rate-limit";
+import { GENERATE_DAILY_LIMITS, GENERATE_ENDPOINT } from "@/modules/generate/constants";
 import { AiBusyError, generateRecommendations } from "@/modules/generate/services/ai-service";
 import { generateInputSchema } from "@/modules/generate/validations/generate-schema";
 
@@ -16,11 +16,8 @@ const NO_STORE = "private, no-store";
 // A 500-character prompt is well under 2 KB of JSON.
 const MAX_BODY_BYTES = 2048;
 
-const ENDPOINT = "generate";
-const DAILY_LIMITS = {
-    perUser: LIMITS.FREE.AI_REQUESTS_PER_DAY,
-    global: LIMITS.GLOBAL.AI_REQUESTS_PER_DAY,
-};
+const ENDPOINT = GENERATE_ENDPOINT;
+const DAILY_LIMITS = GENERATE_DAILY_LIMITS;
 
 function withHeaders(res: Response, remaining?: number): Response {
     res.headers.set("Cache-Control", NO_STORE);

@@ -91,6 +91,16 @@ export async function consumeDailyLimit(
     return { allowed: true, remaining: Math.max(limits.perUser - userCount, 0), day };
 }
 
+/** How many requests the user has left today (read only, one SELECT). */
+export async function getDailyRemaining(userId: string, endpoint: string, perUser: number): Promise<number> {
+    const result = await db.execute<{ count: number }>(sql`
+        SELECT count FROM ai_usage
+        WHERE key = ${userKey(userId)} AND endpoint = ${endpoint} AND day = ${utcDay()}::date
+    `);
+    const used = Number(result.rows[0]?.count ?? 0);
+    return Math.max(perUser - used, 0);
+}
+
 /** Undo consumeDailyLimit (both counters), e.g. when the AI call failed. */
 export async function refundDailyLimit(userId: string, endpoint: string, day: string): Promise<void> {
     await refundKeys([userKey(userId), GLOBAL_KEY], endpoint, day);

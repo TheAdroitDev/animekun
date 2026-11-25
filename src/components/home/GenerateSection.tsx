@@ -163,7 +163,7 @@ export default function GenerateSection() {
                             <p className="generate-preview-desc">
                                 A self-proclaimed eccentric mad scientist accidentally invents a microwave that sends text messages to the past, triggering a deadly butterfly effect across alternate timelines.
                             </p>
-                            <Link href={ROUTES.DASHBOARD.GENERATE} className="generate-preview-cta">
+                            <Link href={ROUTES.DASHBOARD.GENERATE} className="generate-preview-cta" prefetch={false}>
                                 <span>Try Generator with Your Own Prompts</span>
                                 <HugeiconsIcon icon={ArrowRight01Icon} size={15} strokeWidth={2} />
                             </Link>

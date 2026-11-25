@@ -7,6 +7,7 @@ The user describes what they want to watch. Recommend up to ${MAX_RECOMMENDATION
 
 Rules:
 - Only recommend real anime that exist on MyAnimeList. Use each title exactly as MyAnimeList lists it. Never invent a title.
+- Never recommend adult or hentai titles.
 - Do not repeat a title, and do not list several seasons of the same series unless the user asks for them.
 - "reason" is one or two short sentences explaining why it matches this request.
 - "confidence" is how well it matches, from 0 to 1. Be honest; a loose match is below 0.5.

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { count, countDistinct, desc, gt } from "drizzle-orm";
+import { count, countDistinct, desc, gt, sql } from "drizzle-orm";
 import {
     Activity,
     ArrowUpRight,
     BarChart3,
     Bookmark,
     Database,
+    LineChart,
     MessageSquareText,
     Triangle,
     UserPlus,
@@ -19,6 +20,8 @@ import { db } from "@/db";
 import { bookmarks, feedback, sessions, users } from "@/db/schema";
 import { getEnv } from "@/lib/config/env";
 import { BOOKMARK_STATUSES, BOOKMARK_STATUS_LABELS } from "@/modules/bookmarks/types";
+import { GENERATE_DAILY_LIMITS, GENERATE_ENDPOINT } from "@/modules/generate/constants";
+import { GEMINI_MODEL } from "@/modules/generate/services/ai-service";
 
 // Private page: dynamic (reads the session), never indexed.
 // Anyone who isn't ADMIN_EMAIL gets a plain 404, so the page stays hidden.
@@ -50,7 +53,36 @@ const LINKS = [
         href: "https://console.neon.tech/app/projects/bold-dawn-49640110/branches/br-misty-cherry-aud2hg6q/tables",
         icon: Database,
     },
+    {
+        label: "Tracwell",
+        hint: "Product analytics & events",
+        href: "https://tracwell.app/app",
+        icon: LineChart,
+    },
 ];
+
+// AI Finder usage from the ai_usage counters (UTC days, like the limits).
+// Counts answered requests only: failed Gemini calls are refunded, so
+// Google's own count (AI Studio) can be a little higher.
+type AiUsageRow = { today: number; users_today: number; last7: number };
+
+async function getAiUsage(): Promise<AiUsageRow> {
+    const today = new Date().toISOString().slice(0, 10);
+    const result = await db.execute<AiUsageRow>(sql`
+        SELECT
+            COALESCE(SUM(count) FILTER (WHERE key = 'global' AND day = ${today}::date), 0)::int AS today,
+            COUNT(*) FILTER (WHERE key LIKE 'user:%' AND day = ${today}::date AND count > 0)::int AS users_today,
+            COALESCE(SUM(count) FILTER (WHERE key = 'global'), 0)::int AS last7
+        FROM ai_usage
+        WHERE endpoint = ${GENERATE_ENDPOINT} AND day >= ${today}::date - 6
+    `);
+    const row = result.rows[0];
+    return {
+        today: Number(row?.today ?? 0),
+        users_today: Number(row?.users_today ?? 0),
+        last7: Number(row?.last7 ?? 0),
+    };
+}
 
 const formatDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
@@ -69,6 +101,7 @@ async function getAdminStats() {
         byStatus,
         [feedbackTotal],
         latest,
+        aiUsage,
     ] = await Promise.all([
         db.select({ n: count() }).from(users),
         db.select({ n: count() }).from(users).where(gt(users.createdAt, weekAgo)),
@@ -87,6 +120,7 @@ async function getAdminStats() {
             .from(users)
             .orderBy(desc(users.createdAt))
             .limit(6),
+        getAiUsage(),
     ]);
 
     // Every column, in board order, even when it has no bookmarks yet.
@@ -107,6 +141,12 @@ async function getAdminStats() {
             label: BOOKMARK_STATUS_LABELS[status],
             n: statusCounts.get(status) ?? 0,
         })),
+        aiUsage: [
+            { label: "Today", value: `${aiUsage.today} / ${GENERATE_DAILY_LIMITS.global}` },
+            { label: "Users today", value: String(aiUsage.users_today) },
+            { label: "Last 7 days", value: String(aiUsage.last7) },
+            { label: "Model", value: GEMINI_MODEL },
+        ],
         latest: latest.map((u) => ({ ...u, isNew: u.createdAt > dayAgo })),
     };
 }
@@ -116,7 +156,7 @@ export default async function AdminPage() {
     const adminEmail = getEnv().ADMIN_EMAIL.toLowerCase();
     if (!session || !adminEmail || session.user.email.toLowerCase() !== adminEmail) notFound();
 
-    const { today, stats, bookmarkStatuses, latest } = await getAdminStats();
+    const { today, stats, bookmarkStatuses, aiUsage, latest } = await getAdminStats();
     const firstName = session.user.name.split(" ")[0];
 
     return (
@@ -186,6 +226,22 @@ export default async function AdminPage() {
                 </section>
 
                 <div className="admin-side">
+                    {/* AI Finder usage (ai_usage counters) */}
+                    <section className="admin-card" aria-labelledby="admin-ai">
+                        <h2 id="admin-ai" className="admin-card-title">AI Finder usage</h2>
+                        <ul className="admin-statuses">
+                            {aiUsage.map(({ label, value }) => (
+                                <li key={label} className="admin-status">
+                                    <span className="admin-status-label">{label}</span>
+                                    <span className="admin-status-count">{value}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <p className="admin-card-hint">
+                            UTC days (reset 05:30 IST). Failed calls are refunded, so AI Studio may show a little more.
+                        </p>
+                    </section>
+
                     {/* Bookmarks per Kanban column */}
                     <section className="admin-card" aria-labelledby="admin-bookmarks">
                         <h2 id="admin-bookmarks" className="admin-card-title">Bookmarks by status</h2>

@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
-import type { Recommendation } from "../types";
+import type { ResolvedRecommendation } from "../types";
+import { ResultCard } from "./ResultCard";
 
 interface GenerateResultsProps {
     isPending: boolean;
-    results: Recommendation[] | null;
+    results: ResolvedRecommendation[] | null;
     errorMessage: string | null;
 }
 
 /**
  * Loading state and results (step 8.6). No streaming: the route returns one
- * complete JSON answer, and the cards are revealed one after another.
- * Cards show title + reason only; step 8.7 adds posters, confidence and
- * links to /anime/[id].
+ * complete JSON answer, and the cards (ResultCard, 8.7) are revealed one
+ * after another.
  */
 export function GenerateResults({ isPending, results, errorMessage }: GenerateResultsProps) {
     return (
@@ -32,11 +32,7 @@ export function GenerateResults({ isPending, results, errorMessage }: GenerateRe
             ) : (
                 <ol className="gen-results">
                     {results.map((r, i) => (
-                        // --i staggers the reveal animation (see .gen-result in globals.css).
-                        <li key={r.title} className="gen-result" style={{ "--i": i } as CSSProperties}>
-                            <span className="gen-result-title">{r.title}</span>
-                            <span className="gen-result-reason">{r.reason}</span>
-                        </li>
+                        <ResultCard key={r.anime?.id ?? r.title} recommendation={r} index={i} />
                     ))}
                 </ol>
             )}
@@ -70,10 +66,14 @@ function LoadingState() {
             <p className="gen-loading-message">{LOADING_MESSAGES[step]}</p>
             <ol className="gen-results" aria-hidden="true">
                 {Array.from({ length: SKELETON_COUNT }, (_, i) => (
-                    <li key={i} className="gen-result gen-result--skeleton">
-                        <span className="detail-skeleton" style={{ width: "45%", height: 16 }} />
-                        <span className="detail-skeleton" style={{ width: "95%", height: 12 }} />
-                        <span className="detail-skeleton" style={{ width: "70%", height: 12 }} />
+                    <li key={i} className="gen-result gen-card gen-result--skeleton">
+                        <span className="gen-card-poster detail-skeleton" />
+                        <span className="gen-card-body">
+                            <span className="detail-skeleton" style={{ width: "45%", height: 16 }} />
+                            <span className="detail-skeleton" style={{ width: "25%", height: 12 }} />
+                            <span className="detail-skeleton" style={{ width: "95%", height: 12 }} />
+                            <span className="detail-skeleton" style={{ width: "70%", height: 12 }} />
+                        </span>
                     </li>
                 ))}
             </ol>

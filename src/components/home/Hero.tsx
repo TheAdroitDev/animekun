@@ -19,7 +19,7 @@ export default function Hero() {
                     <div className="hero-badge">
                         <HugeiconsIcon icon={SparklesIcon} size={14} strokeWidth={1.8} />
                         <span>You can now LOGIN guys and BOOKMARKS(anime) are here enjoy. 🫶🏻 
-                           <div> You can also ask AI to recommend anime 🤩</div>
+                           <span className="hero-badge-line"> You can also ask AI to recommend anime 🤩</span>
                         </span>
                     </div>
                 </div>

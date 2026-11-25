@@ -16,15 +16,10 @@ import {
 
 import { GENRES } from "@/lib/constants/genres";
 import { ROUTES } from "@/lib/constants/route";
+import { VIBE_PROMPTS } from "@/modules/generate/constants";
 
-const VIBE_PILLS = [
-    { label: "Overpowered MC", prompt: "Overpowered main character who hides their power" },
-    { label: "Mind Games & Suspense", prompt: "Psychological mind games with high stakes and twists" },
-    { label: "Dark Fantasy", prompt: "Dark gritty fantasy with brutal consequences" },
-    { label: "Comfort & Chill", prompt: "Relaxing slice of life comfort anime to unwind" },
-    { label: "Tearjerker Romance", prompt: "Heartbreaking emotional romance with deep connection" },
-    { label: "High-Octane Action", prompt: "Fast-paced sakuga action with great fight choreography" },
-];
+// Shared with the /generate page's prompt chips.
+const VIBE_PILLS = VIBE_PROMPTS;
 
 export default function GenerateSection() {
     const router = useRouter();

@@ -26,4 +26,10 @@ export interface AnimeProvider {
     getRecommendations(
         animeId: string,
     ): Promise<Anime[]>;
+
+    // The anime whose title matches exactly (case/punctuation ignored), or
+    // null. Used to link AI recommendations, which come back as titles.
+    findByTitle(
+        title: string,
+    ): Promise<Anime | null>;
 }

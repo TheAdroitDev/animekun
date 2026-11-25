@@ -5,6 +5,7 @@ import { ApiResponse } from "@/lib/utils/api-response";
 import { consumeDailyLimit, refundDailyLimit } from "@/lib/utils/rate-limit";
 import { GENERATE_DAILY_LIMITS, GENERATE_ENDPOINT } from "@/modules/generate/constants";
 import { AiBusyError, generateRecommendations } from "@/modules/generate/services/ai-service";
+import { resolveRecommendations } from "@/modules/generate/services/resolve-anime";
 import { generateInputSchema } from "@/modules/generate/validations/generate-schema";
 
 // Gemini times out after 15s (ai-service.ts); this leaves a margin.
@@ -73,12 +74,9 @@ export async function POST(request: NextRequest) {
         return withHeaders(ApiResponse.error(message, 429), limit.remaining);
     }
 
+    let recommendations: Awaited<ReturnType<typeof generateRecommendations>>;
     try {
-        const recommendations = await generateRecommendations(parsed.data.prompt);
-        return withHeaders(
-            ApiResponse.ok({ recommendations, remaining: limit.remaining }),
-            limit.remaining,
-        );
+        recommendations = await generateRecommendations(parsed.data.prompt);
     } catch (error) {
         // The user didn't get an answer: give the try back.
         let remaining = limit.remaining;
@@ -98,4 +96,12 @@ export async function POST(request: NextRequest) {
             remaining,
         );
     }
+
+    // Link each title to a real anime. Never throws: a failed lookup just
+    // leaves that card unlinked (the try is already spent on a good answer).
+    const resolved = await resolveRecommendations(recommendations);
+    return withHeaders(
+        ApiResponse.ok({ recommendations: resolved, remaining: limit.remaining }),
+        limit.remaining,
+    );
 }

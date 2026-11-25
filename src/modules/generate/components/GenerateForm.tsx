@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 
 import { GenerateError, useGenerate } from "../queries/use-generate";
-import type { Recommendation } from "../types";
+import type { ResolvedRecommendation } from "../types";
 import { PROMPT_MAX_LENGTH, PROMPT_MIN_LENGTH } from "../validations/generate-schema";
 import { GenerateResults } from "./GenerateResults";
 
@@ -18,7 +18,7 @@ interface GenerateFormProps {
 export function GenerateForm({ initialPrompt, initialRemaining, dailyLimit }: GenerateFormProps) {
     const [prompt, setPrompt] = useState(initialPrompt);
     const [remaining, setRemaining] = useState(initialRemaining);
-    const [results, setResults] = useState<Recommendation[] | null>(null);
+    const [results, setResults] = useState<ResolvedRecommendation[] | null>(null);
     const generate = useGenerate();
 
     const trimmedLength = prompt.trim().length;

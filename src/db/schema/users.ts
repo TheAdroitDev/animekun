@@ -1,8 +1,11 @@
 import {
     boolean,
+    date,
     index,
+    integer,
     pgEnum,
     pgTable,
+    primaryKey,
     text,
     timestamp,
     uuid,
@@ -47,30 +50,19 @@ export const users = pgTable("users", {
         .notNull(),
 });
 
-// ai requests
-export const aiRequests = pgTable(
-    "ai_requests",
+// Daily AI usage counters (lib/utils/rate-limit.ts). One row per key per
+// endpoint per UTC day; key is "user:<uuid>" or "global" (the whole app),
+// so there is no foreign key. Raised with an atomic upsert (ON CONFLICT DO
+// UPDATE … WHERE count < limit): exact even for parallel requests.
+export const aiUsage = pgTable(
+    "ai_usage",
     {
-        id: uuid("id").primaryKey().defaultRandom(),
-        userId: uuid("user_id")
-            .notNull()
-            .references(() => users.id, {
-                onDelete: "cascade",
-            }),
+        key: text("key").notNull(),
         endpoint: text("endpoint").notNull(),
-        createdAt: timestamp("created_at", {
-            withTimezone: true,
-        })
-            .defaultNow()
-            .notNull(),
+        day: date("day").notNull(),
+        count: integer("count").notNull().default(0),
     },
-    (table) => [
-        index("ai_requests_user_endpoint_created_idx").on(
-            table.userId,
-            table.endpoint,
-            table.createdAt,
-        ),
-    ],
+    (table) => [primaryKey({ columns: [table.key, table.endpoint, table.day] })],
 );
 
 // OAuth / Authentication Accounts

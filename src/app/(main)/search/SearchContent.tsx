@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 
+import { AiFinderNote } from "@/components/shared/AiFinderNote";
 import { AnimeGrid } from "@/modules/anime/components/AnimeGrid";
 import { SearchBar } from "@/modules/anime/components/SearchBar";
 import { FilterPanel } from "@/modules/anime/components/FilterPanel";
@@ -214,6 +215,7 @@ export function SearchContent() {
                         Search by title, filter across 20+ genres, or discover seasonal staples.
                     </p>
                 </div>
+                <AiFinderNote query={searchParams.get("q") ?? ""} />
                 <SearchBar />
             </div>
 

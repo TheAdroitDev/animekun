@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 
+import { VIBE_PROMPTS } from "../constants";
 import { GenerateError, useGenerate } from "../queries/use-generate";
 import type { ResolvedRecommendation } from "../types";
 import { PROMPT_MAX_LENGTH, PROMPT_MIN_LENGTH } from "../validations/generate-schema";
@@ -14,7 +15,7 @@ interface GenerateFormProps {
     dailyLimit: number;
 }
 
-/** Prompt box + submit (step 8.5); loading state and results in GenerateResults (8.6). */
+/** Prompt box, idea chips (8.8) + submit (8.5); loading state and results in GenerateResults (8.6). */
 export function GenerateForm({ initialPrompt, initialRemaining, dailyLimit }: GenerateFormProps) {
     const [prompt, setPrompt] = useState(initialPrompt);
     const [remaining, setRemaining] = useState(initialRemaining);
@@ -59,6 +60,23 @@ export function GenerateForm({ initialPrompt, initialRemaining, dailyLimit }: Ge
                     disabled={generate.isPending}
                     aria-describedby="gen-prompt-count gen-remaining"
                 />
+
+                {/* Prompt ideas (8.8): fill the box, never submit. Focus stays
+                    on the chip, so phones don't pop the keyboard over them. */}
+                <div className="gen-chips" role="group" aria-label="Prompt ideas">
+                    {VIBE_PROMPTS.map((vibe) => (
+                        <button
+                            key={vibe.label}
+                            type="button"
+                            className="gen-chip"
+                            aria-pressed={prompt === vibe.prompt}
+                            onClick={() => setPrompt(vibe.prompt)}
+                            disabled={generate.isPending}
+                        >
+                            {vibe.label}
+                        </button>
+                    ))}
+                </div>
 
                 <div className="gen-form-footer">
                     <span id="gen-prompt-count" className="gen-form-count">

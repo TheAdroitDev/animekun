@@ -18,7 +18,7 @@ import { buildUserPrompt, SYSTEM_PROMPT } from "./prompt-templates";
  *
  * One request = one generateContent call that must return JSON matching
  * recommendationsResponseSchema. No streaming (the UI reveals the cards with
- * an animation) and no automatic retries (the SDK only retries when asked).
+ * an animation). One retry, only on Gemini 5xx (see RETRY_OPTIONS).
  */
 
 // Change the model here only. Free tier: check its quota in AI Studio.
@@ -26,8 +26,13 @@ export const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 // ~5 short recommendations need ~400 tokens; the cap keeps answers short.
 const MAX_OUTPUT_TOKENS = 1024;
-// Well under the route's maxDuration (step 8.2).
-const REQUEST_TIMEOUT_MS = 15_000;
+// Per attempt. Worst case 2 attempts + ~1–2s wait ≈ 26s, under the route's
+// maxDuration (30s). Normal calls take ~3s.
+const REQUEST_TIMEOUT_MS = 12_000;
+
+// Gemini sometimes answers 503 "high demand" for a moment: retry once.
+// Not 429: retrying a quota error right away only burns quota.
+const RETRY_OPTIONS = { attempts: 2, initialDelay: 1, httpStatusCodes: [500, 502, 503, 504] };
 
 // Built once at module load: the schema never changes.
 const RESPONSE_JSON_SCHEMA = z.toJSONSchema(recommendationsResponseSchema);
@@ -72,7 +77,7 @@ export async function generateRecommendations(prompt: string): Promise<Recommend
                 maxOutputTokens: MAX_OUTPUT_TOKENS,
                 // A list of titles needs little reasoning; less thinking = faster, fewer tokens.
                 thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-                httpOptions: { timeout: REQUEST_TIMEOUT_MS },
+                httpOptions: { timeout: REQUEST_TIMEOUT_MS, retryOptions: RETRY_OPTIONS },
             },
         });
         text = response.text;

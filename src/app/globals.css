@@ -7411,3 +7411,219 @@ input[type="search"]::-webkit-search-results-decoration {
     rotate: -4deg;
   }
 }
+
+/* ── /generate page (AI Anime Finder, Phase 8) ───────────────────────────── */
+.gen-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 24px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gen-page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.gen-page-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.gen-page-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.gen-page-subtitle {
+  margin-top: 4px;
+  font-size: 14.5px;
+  color: var(--text-secondary);
+}
+
+.gen-page-privacy {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.gen-form-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gen-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.gen-form-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.gen-form-textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gen-form-textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+.gen-form-textarea:disabled {
+  opacity: 0.7;
+}
+
+.gen-form-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.gen-form-count,
+.gen-form-remaining {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.gen-form-remaining--empty {
+  color: var(--accent-readable);
+}
+
+.gen-form-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.gen-form-submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.gen-form-submit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.gen-form-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gen-form-spinner {
+  animation: gen-spin 0.8s linear infinite;
+}
+
+@keyframes gen-spin {
+  to { transform: rotate(360deg); }
+}
+
+.gen-form-error {
+  padding: 12px 14px;
+  font-size: 13.5px;
+  color: var(--accent-readable);
+  background: var(--accent-subtle);
+  border-radius: 12px;
+}
+
+.gen-results-empty {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* Placeholder list: steps 8.6/8.7 replace it with animated result cards. */
+.gen-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gen-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.gen-result-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.gen-result-reason {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 520px) {
+  .gen-page {
+    padding: 24px 16px 80px;
+  }
+
+  .gen-page-title {
+    font-size: 24px;
+  }
+
+  .gen-form-submit {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gen-form-spinner {
+    animation-duration: 2s;
+  }
+}

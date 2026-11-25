@@ -729,6 +729,11 @@ button {
   margin-bottom: 24px;
 }
 
+/* Second line inside the badge (a <span>, since a <div> can't sit in a <span>). */
+.hero-badge-line {
+  display: block;
+}
+
 .hero-badge {
   display: inline-flex;
   align-items: center;
@@ -7811,5 +7816,94 @@ input[type="search"]::-webkit-search-results-decoration {
 
   .gen-card:has(.gen-card-link:hover) {
     transform: none;
+  }
+}
+
+/* ── AI Finder note on /search (Phase 8 rollout, dismissible) ────────────── */
+.ai-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 10px 12px 10px 14px;
+  background: var(--accent-subtle);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.ai-note-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.ai-note-text {
+  flex: 1 1 260px;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+/* Own line, and allowed to wrap: with nowrap it ran past the text column
+   and got cut off. */
+.ai-note-small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  /* Not --text-muted: on the red-tinted dark background it was barely readable. */
+  color: var(--text-secondary);
+}
+
+.ai-note-link {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.ai-note-link:hover {
+  background: var(--accent-hover);
+}
+
+.ai-note-link:focus-visible,
+.ai-note-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ai-note-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ai-note-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+@media (max-width: 520px) {
+  .ai-note {
+    position: relative;
+    padding-right: 40px;
+  }
+
+  .ai-note-close {
+    position: absolute;
+    top: 6px;
+    right: 6px;
   }
 }

@@ -5,6 +5,7 @@ import { quizSessions } from "@/db/schema";
 
 import {
     ANSWER_SLACK_SECONDS,
+    LIFELINE_PAUSE_SECONDS,
     POINTS_PER_CORRECT,
     REVEAL_SECONDS,
     TIME_LIMIT_SECONDS,
@@ -208,7 +209,9 @@ export async function applyLifeline(
 ): Promise<LifelineResult | null> {
     const result = await db.execute<LifelineRow>(sql`
         UPDATE quiz_sessions
-        SET lifelines_used = array_append(lifelines_used, ${type}::text)
+        SET lifelines_used = array_append(lifelines_used, ${type}::text),
+            -- The timer pauses while this loads: give that time back.
+            question_served_at = question_served_at + make_interval(secs => ${LIFELINE_PAUSE_SECONDS}::int)
         WHERE id = ${sessionId}::uuid
           AND user_id = ${userId}::uuid
           AND current_index = ${index}::int

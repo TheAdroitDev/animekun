@@ -98,3 +98,13 @@ export interface AnswerResult {
 export type LifelineResult =
     | { type: "fifty"; removedIds: string[] }
     | { type: "hint"; hint: string };
+
+/** One answered question, kept in the browser for the results review (9.8). */
+export interface QuizReviewItem {
+    question: QuizQuestion;
+    selectedId: string | null;
+    correctId: string;
+    correct: boolean;
+    skipped: boolean;
+    timedOut: boolean;
+}

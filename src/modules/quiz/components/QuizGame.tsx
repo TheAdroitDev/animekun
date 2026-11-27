@@ -10,10 +10,12 @@ import {
     REVEAL_SECONDS,
     TIME_LIMIT_SECONDS,
 } from "../constants";
-import { answerQuizRequest, QuizApiError, startQuizRequest } from "../queries/quiz-api";
+import { answerQuizRequest, lifelineRequest, QuizApiError, startQuizRequest } from "../queries/quiz-api";
 import type {
     AnswerResult,
     Difficulty,
+    Lifeline,
+    LifelineResult,
     QuizMode,
     QuizQuestion,
     QuizResults,
@@ -42,6 +44,10 @@ interface Round {
     question: QuizQuestion;
     score: number;
     streak: number;
+    /** Lifelines used this game, and this question's 50/50 and hint (9.7). */
+    lifelinesUsed: Lifeline[];
+    removedIds: string[];
+    hint: string | null;
 }
 
 type GameState =
@@ -58,6 +64,8 @@ type GameAction =
     | { type: "answer"; optionId: string | null }
     | { type: "answered"; result: AnswerResult }
     | { type: "answerFailed"; message: string }
+    | { type: "lifelineUsed"; index: number; result: LifelineResult }
+    | { type: "lifelineFailed"; index: number; message: string }
     | { type: "next" }
     | { type: "exit"; error: string | null };
 
@@ -75,16 +83,41 @@ function gameReducer(state: GameState, action: GameAction): GameState {
                 question: action.game.question,
                 score: 0,
                 streak: 0,
+                lifelinesUsed: [],
+                removedIds: [],
+                hint: null,
             };
         case "answer":
             if (state.phase !== "playing") return state; // one answer per question
             return { ...roundOf(state), phase: "checking", selectedId: action.optionId };
         case "answered":
             if (state.phase !== "checking") return state;
-            return { ...state, phase: "revealed", result: action.result };
+            return {
+                ...state,
+                phase: "revealed",
+                result: action.result,
+                lifelinesUsed: action.result.skipped
+                    ? [...state.lifelinesUsed, "skip"]
+                    : state.lifelinesUsed,
+            };
         case "answerFailed":
             if (state.phase !== "checking") return state;
             return { ...roundOf(state), phase: "playing", error: action.message };
+        case "lifelineUsed": {
+            // Ignore a late reply for a question that's already answered.
+            if (state.phase !== "playing" || state.question.index !== action.index) return state;
+            const { result } = action;
+            return {
+                ...state,
+                error: null,
+                lifelinesUsed: [...state.lifelinesUsed, result.type],
+                removedIds: result.type === "fifty" ? result.removedIds : state.removedIds,
+                hint: result.type === "hint" ? result.hint : state.hint,
+            };
+        }
+        case "lifelineFailed":
+            if (state.phase !== "playing" || state.question.index !== action.index) return state;
+            return { ...state, error: action.message };
         case "next": {
             if (state.phase !== "revealed") return state;
             const { result } = state;
@@ -98,6 +131,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
                 question: result.next,
                 score: result.score,
                 streak: result.streak,
+                removedIds: [],
+                hint: null,
             };
         }
         case "exit":
@@ -106,8 +141,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 }
 
 function roundOf(state: Round): Round {
-    const { sessionId, total, question, score, streak } = state;
-    return { sessionId, total, question, score, streak };
+    const { sessionId, total, question, score, streak, lifelinesUsed, removedIds, hint } = state;
+    return { sessionId, total, question, score, streak, lifelinesUsed, removedIds, hint };
 }
 
 interface QuizGameProps {
@@ -138,11 +173,11 @@ export function QuizGame({ initialRemaining, dailyLimit }: QuizGameProps) {
     const questionIndex = state.phase === "playing" ? state.question.index : null;
 
     const handleAnswer = useCallback(
-        async (optionId: string | null) => {
+        async (optionId: string | null, skip = false) => {
             if (sessionId === null || questionIndex === null) return;
             dispatch({ type: "answer", optionId });
             try {
-                const result = await answerQuizRequest(sessionId, questionIndex, optionId);
+                const result = await answerQuizRequest(sessionId, questionIndex, optionId, skip);
                 dispatch({ type: "answered", result });
             } catch (error) {
                 if (error instanceof QuizApiError && error.status === 409) {
@@ -158,6 +193,27 @@ export function QuizGame({ initialRemaining, dailyLimit }: QuizGameProps) {
         },
         [sessionId, questionIndex],
     );
+
+    const [lifelinePending, setLifelinePending] = useState<Lifeline | null>(null);
+
+    // Skip is an answer (no points, streak kept); 50/50 and Hint ask the
+    // server for this question's data. The timer keeps running meanwhile.
+    const handleLifeline = async (lifeline: Lifeline) => {
+        if (sessionId === null || questionIndex === null || lifelinePending) return;
+        if (lifeline === "skip") {
+            void handleAnswer(null, true);
+            return;
+        }
+        setLifelinePending(lifeline);
+        try {
+            const result = await lifelineRequest(sessionId, questionIndex, lifeline);
+            dispatch({ type: "lifelineUsed", index: questionIndex, result });
+        } catch (error) {
+            dispatch({ type: "lifelineFailed", index: questionIndex, message: errorMessage(error) });
+        } finally {
+            setLifelinePending(null);
+        }
+    };
 
     // After the reveal, move on by itself: the server starts the next
     // question's clock REVEAL_SECONDS after the answer. "Next" skips ahead.
@@ -180,7 +236,12 @@ export function QuizGame({ initialRemaining, dailyLimit }: QuizGameProps) {
                 selectedId={state.phase === "playing" ? null : state.selectedId}
                 result={state.phase === "revealed" ? state.result : null}
                 error={state.phase === "playing" ? state.error : null}
+                lifelinesUsed={state.lifelinesUsed}
+                lifelinePending={lifelinePending}
+                removedIds={state.removedIds}
+                hint={state.hint}
                 onAnswer={handleAnswer}
+                onLifeline={handleLifeline}
                 onNext={() => dispatch({ type: "next" })}
                 onQuit={() => dispatch({ type: "exit", error: null })}
             />

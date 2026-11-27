@@ -5,6 +5,7 @@ import { useState } from "react";
 import { trackEvent } from "@/components/analytics/TracwellAnalytics";
 import { signIn } from "@/lib/auth-client";
 import { ROUTES } from "@/lib/constants/route";
+import { detectInAppBrowser } from "@/modules/auth/utils/in-app-browser";
 import { getRedirectFromLocation } from "@/modules/auth/utils/safe-redirect";
 
 /**
@@ -20,7 +21,12 @@ export function GoogleSignInButton() {
     const handleGoogle = async () => {
         setError(null);
         setIsRedirecting(true);
-        trackEvent("sign_in_started", { provider: "google" });
+        // in_app: Google blocks sign-in inside apps' built-in browsers, so
+        // these starts can't finish (compare with completed sign-ups).
+        trackEvent("sign_in_started", {
+            provider: "google",
+            in_app: detectInAppBrowser(navigator.userAgent) !== null,
+        });
 
         // ?welcome= tells WelcomeCelebration which surprise to play
         // (Better Auth sends brand-new accounts to newUserCallbackURL).

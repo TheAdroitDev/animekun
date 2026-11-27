@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {Cat,  Heart } from "lucide-react";
 
+import { FeedbackLink } from "@/components/feedback";
 import { ROUTES } from "@/lib/constants/route";
 
 const navigationLinks = [
@@ -108,6 +109,11 @@ export default function Footer() {
                                             </Link>
                                         </li>
                                     ))}
+                                    {group.title === "Platform" && (
+                                        <li>
+                                            <FeedbackLink className="footer-link footer-link-btn" />
+                                        </li>
+                                    )}
                                 </ul>
                             </div>
                         ))}

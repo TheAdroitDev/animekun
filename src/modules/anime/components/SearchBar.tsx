@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 
@@ -14,6 +15,10 @@ interface SearchBarProps {
     className?: string;
     autoFocus?: boolean;
     onSearch?: (query: string) => void;
+    /** Called when the field is focused or typed in (e.g. to close filters). */
+    onActivate?: () => void;
+    /** Results are loading: shows a spinner in place of the search icon. */
+    isSearching?: boolean;
 }
 
 export function SearchBar({
@@ -23,6 +28,8 @@ export function SearchBar({
     className = "",
     autoFocus = false,
     onSearch,
+    onActivate,
+    isSearching = false,
 }: SearchBarProps) {
     const searchParams = useSearchParams();
 
@@ -114,18 +121,27 @@ export function SearchBar({
             className={`search-input-form ${className}`}
         >
             <div className="search-input-wrapper">
-                <HugeiconsIcon
-                    icon={Search01Icon}
-                    size={18}
-                    strokeWidth={1.8}
-                    className="search-input-icon"
-                />
+                {isSearching ? (
+                    <Loader2 size={18} className="search-input-icon search-input-spinner" aria-hidden="true" />
+                ) : (
+                    <HugeiconsIcon
+                        icon={Search01Icon}
+                        size={18}
+                        strokeWidth={1.8}
+                        className="search-input-icon"
+                    />
+                )}
 
                 <input
                     ref={inputRef}
                     type="search"
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    onChange={(e) => {
+                        setInputValue(e.target.value);
+                        onActivate?.();
+                    }}
+                    onFocus={onActivate}
+                    aria-busy={isSearching}
                     placeholder={placeholder}
                     className="search-input-field"
                     autoFocus={autoFocus}

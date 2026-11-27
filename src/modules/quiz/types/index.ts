@@ -1,8 +1,10 @@
-import type { DIFFICULTIES, QUIZ_MODES } from "../constants";
+import type { DIFFICULTIES, LIFELINES, QUIZ_MODES } from "../constants";
 
 export type QuizMode = (typeof QUIZ_MODES)[number];
 
 export type Difficulty = (typeof DIFFICULTIES)[number];
+
+export type Lifeline = (typeof LIFELINES)[number];
 
 /**
  * One anime in the cached question pool (server-only data). `synopsis` is
@@ -33,13 +35,19 @@ export interface StoredQuestion {
     animeId: string;
     prompt: string;
     options: QuizOption[];
+    /** Hint lifeline text, e.g. "Action · Fantasy · aired 2011". */
+    hint: string;
+    /** The 2 wrong options the 50/50 lifeline removes. */
+    removeIds: string[];
 }
 
-/** One answered question in quiz_sessions.answers (null = timed out). */
+/** One answered question in quiz_sessions.answers (null = timed out or skipped). */
 export interface StoredAnswer {
     optionId: string | null;
     correct: boolean;
     ms: number;
+    /** Skip lifeline: no points, streak kept. */
+    skipped: boolean;
 }
 
 /**
@@ -78,9 +86,15 @@ export interface QuizResults {
 export interface AnswerResult {
     correct: boolean;
     timedOut: boolean;
+    skipped: boolean;
     correctId: string;
     score: number;
     streak: number;
     next: QuizQuestion | null;
     results: QuizResults | null;
 }
+
+/** POST /api/quiz/lifeline → what that lifeline reveals for the current question. */
+export type LifelineResult =
+    | { type: "fifty"; removedIds: string[] }
+    | { type: "hint"; hint: string };

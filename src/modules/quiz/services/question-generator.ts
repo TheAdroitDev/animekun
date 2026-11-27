@@ -28,6 +28,11 @@ export function generateQuestions(
                 animeId: answer.id,
                 prompt: mode === "synopsis" ? answer.synopsis : answer.posterUrl,
                 options: shuffle([answer, ...wrong]).map((a) => ({ id: a.id, title: a.title })),
+                // Lifeline data, only sent to the browser when used (9.7).
+                hint: buildHint(answer),
+                removeIds: shuffle(wrong)
+                    .slice(0, 2)
+                    .map((a) => a.id),
             };
         });
 }
@@ -63,6 +68,13 @@ function pickDistractors(
         picked.push(...rest.slice(0, count - picked.length));
     }
     return picked;
+}
+
+/** "Action · Fantasy · aired 2011" (up to 3 genres, then the year). */
+function buildHint(anime: PoolAnime): string {
+    const parts = anime.genres.slice(0, 3);
+    if (anime.year) parts.push(`aired ${anime.year}`);
+    return parts.length > 0 ? parts.join(" · ") : "No clue for this one, sorry!";
 }
 
 /** Fisher–Yates on a copy. */

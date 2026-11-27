@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useState } from "react";
-import { BookOpen, Image as ImageIcon, Loader2, Play } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, Image as ImageIcon, Loader2, Play, Trophy } from "lucide-react";
+
+import { ROUTES } from "@/lib/constants/route";
 
 import {
     DIFFICULTIES,
@@ -337,6 +340,10 @@ export function QuizGame({ initialRemaining, dailyLimit }: QuizGameProps) {
             </fieldset>
 
             <div className="quiz-play-footer">
+                <Link href={ROUTES.DASHBOARD.QUIZ_LEADERBOARD} prefetch={false} className="quiz-play-board-link">
+                    <Trophy size={14} aria-hidden="true" />
+                    <span>Leaderboard</span>
+                </Link>
                 <span className={`quiz-play-remaining${outOfGames ? " quiz-play-remaining--empty" : ""}`}>
                     {outOfGames
                         ? "No quizzes left today · resets at 00:00 UTC"

@@ -52,3 +52,7 @@ export const QUIZ_DAILY_LIMITS = {
 // fifty = remove 2 wrong options, hint = genres and year, skip = move on
 // with 0 points but keep the streak.
 export const LIFELINES = ["fifty", "hint", "skip"] as const;
+
+// The timer stops while 50/50 or Hint loads; the server gives the question
+// this many seconds back per use so its clock stays in step (max 2 per game).
+export const LIFELINE_PAUSE_SECONDS = 1;

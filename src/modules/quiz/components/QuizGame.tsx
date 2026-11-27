@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useState } from "react";
-import { BookOpen, Image as ImageIcon, Loader2, Play, RotateCcw } from "lucide-react";
+import { BookOpen, Image as ImageIcon, Loader2, Play } from "lucide-react";
 
 import {
     DIFFICULTIES,
@@ -18,10 +18,12 @@ import type {
     LifelineResult,
     QuizMode,
     QuizQuestion,
-    QuizResults,
+    QuizResults as QuizResultsData,
+    QuizReviewItem,
     StartQuizResult,
 } from "../types";
 import { QuizCard } from "./QuizCard";
+import { QuizResults } from "./QuizResults";
 
 const MODE_INFO: Record<QuizMode, { label: string; description: string; icon: typeof BookOpen }> = {
     synopsis: { label: "Synopsis", description: "Read the plot, name the anime.", icon: BookOpen },
@@ -48,6 +50,8 @@ interface Round {
     lifelinesUsed: Lifeline[];
     removedIds: string[];
     hint: string | null;
+    /** Answered questions so far, for the results review (9.8). */
+    history: QuizReviewItem[];
 }
 
 type GameState =
@@ -56,7 +60,7 @@ type GameState =
     | ({ phase: "playing"; error: string | null } & Round)
     | ({ phase: "checking"; selectedId: string | null } & Round)
     | ({ phase: "revealed"; selectedId: string | null; result: AnswerResult } & Round)
-    | { phase: "finished"; results: QuizResults };
+    | { phase: "finished"; results: QuizResultsData; history: QuizReviewItem[] };
 
 type GameAction =
     | { type: "start" }
@@ -72,7 +76,8 @@ type GameAction =
 function gameReducer(state: GameState, action: GameAction): GameState {
     switch (action.type) {
         case "start":
-            return state.phase === "idle" ? { phase: "starting" } : state;
+            // From the start screen, or "Play again" on the results screen.
+            return state.phase === "idle" || state.phase === "finished" ? { phase: "starting" } : state;
         case "started":
             if (state.phase !== "starting") return state;
             return {
@@ -86,6 +91,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
                 lifelinesUsed: [],
                 removedIds: [],
                 hint: null,
+                history: [],
             };
         case "answer":
             if (state.phase !== "playing") return state; // one answer per question
@@ -99,6 +105,17 @@ function gameReducer(state: GameState, action: GameAction): GameState {
                 lifelinesUsed: action.result.skipped
                     ? [...state.lifelinesUsed, "skip"]
                     : state.lifelinesUsed,
+                history: [
+                    ...state.history,
+                    {
+                        question: state.question,
+                        selectedId: state.selectedId,
+                        correctId: action.result.correctId,
+                        correct: action.result.correct,
+                        skipped: action.result.skipped,
+                        timedOut: action.result.timedOut,
+                    },
+                ],
             };
         case "answerFailed":
             if (state.phase !== "checking") return state;
@@ -122,7 +139,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             if (state.phase !== "revealed") return state;
             const { result } = state;
             if (!result.next) {
-                return result.results ? { phase: "finished", results: result.results } : state;
+                return result.results
+                    ? { phase: "finished", results: result.results, history: state.history }
+                    : state;
             }
             return {
                 ...roundOf(state),
@@ -141,8 +160,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 }
 
 function roundOf(state: Round): Round {
-    const { sessionId, total, question, score, streak, lifelinesUsed, removedIds, hint } = state;
-    return { sessionId, total, question, score, streak, lifelinesUsed, removedIds, hint };
+    const { sessionId, total, question, score, streak, lifelinesUsed, removedIds, hint, history } = state;
+    return { sessionId, total, question, score, streak, lifelinesUsed, removedIds, hint, history };
 }
 
 interface QuizGameProps {
@@ -157,7 +176,7 @@ export function QuizGame({ initialRemaining, dailyLimit }: QuizGameProps) {
     const [remaining, setRemaining] = useState(initialRemaining);
 
     const handleStart = async () => {
-        if (state.phase !== "idle" || remaining <= 0) return;
+        if ((state.phase !== "idle" && state.phase !== "finished") || remaining <= 0) return;
         dispatch({ type: "start" });
         try {
             const game = await startQuizRequest(mode, difficulty);
@@ -249,24 +268,18 @@ export function QuizGame({ initialRemaining, dailyLimit }: QuizGameProps) {
     }
 
     if (state.phase === "finished") {
-        // Minimal end screen; the full results screen is step 9.8.
-        const { results } = state;
         return (
-            <section className="quiz-play-card quiz-results" aria-live="polite">
-                <p className="quiz-results-score">{results.score} pts</p>
-                <p className="quiz-results-line">
-                    {results.correctCount} of {results.total} correct · best streak {results.bestStreak} ·{" "}
-                    {Math.round(results.durationMs / 1000)}s
-                </p>
-                <button
-                    type="button"
-                    className="quiz-play-start quiz-results-again"
-                    onClick={() => dispatch({ type: "exit", error: null })}
-                >
-                    <RotateCcw size={16} aria-hidden="true" />
-                    <span>Play again</span>
-                </button>
-            </section>
+            <QuizResults
+                results={state.results}
+                history={state.history}
+                mode={mode}
+                difficulty={difficulty}
+                remaining={remaining}
+                dailyLimit={dailyLimit}
+                isStarting={false}
+                onPlayAgain={handleStart}
+                onChangeMode={() => dispatch({ type: "exit", error: null })}
+            />
         );
     }
 

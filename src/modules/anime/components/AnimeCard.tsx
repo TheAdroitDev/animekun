@@ -8,9 +8,11 @@ import type { Anime } from "@/modules/anime/types";
 
 interface AnimeCardProps {
     anime: Anime;
+    /** Above the fold (first row): load right away, it may be the LCP image. */
+    eager?: boolean;
 }
 
-export function AnimeCard({ anime }: AnimeCardProps) {
+export function AnimeCard({ anime, eager = false }: AnimeCardProps) {
     const { urlEndpoint } = getImageKitConfig();
 
     return (
@@ -33,6 +35,8 @@ export function AnimeCard({ anime }: AnimeCardProps) {
                             fill
                             sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 200px"
                             className="anime-card-img"
+                            loading={eager ? "eager" : undefined}
+                            fetchPriority={eager ? "high" : undefined}
                             transformation={[
                                 {
                                     width: 300,
@@ -48,6 +52,8 @@ export function AnimeCard({ anime }: AnimeCardProps) {
                             fill
                             sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 200px"
                             className="anime-card-img"
+                            loading={eager ? "eager" : undefined}
+                            fetchPriority={eager ? "high" : undefined}
                         />
                     )
                 ) : (

@@ -2,9 +2,13 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { SlidersHorizontal, X } from "lucide-react";
+import { ArrowRight, EyeOff, Shuffle, SlidersHorizontal, X } from "lucide-react";
 
 import { AiFinderNote } from "@/components/shared/AiFinderNote";
+import { useSession } from "@/lib/auth-client";
+import { useBookmarkStatuses } from "@/modules/bookmarks";
+import { useHideCompleted } from "@/modules/anime/utils/hide-completed";
+import { shuffleShelf, useLandingShelf } from "@/modules/anime/utils/search-shelves";
 import { AnimeGrid } from "@/modules/anime/components/AnimeGrid";
 import { SearchBar } from "@/modules/anime/components/SearchBar";
 import { FilterPanel } from "@/modules/anime/components/FilterPanel";
@@ -86,7 +90,10 @@ function collectActiveChips(sp: URLSearchParams): ActiveChip[] {
 
 export function SearchContent() {
     const searchParams = useSearchParams();
-    const [isFilterOpen, setIsFilterOpen] = useState(true);
+    // Collapsed by default: on phones the open panel pushed results off
+    // screen. Active filters still show as chips and as a count in the header.
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const closeFilters = useCallback(() => setIsFilterOpen(false), []);
 
     // URL Validation (useSearchParams is the sole single source of truth)
     const parsedQuery = useMemo(() => {
@@ -124,12 +131,24 @@ export function SearchContent() {
         };
     }, [parsedQuery]);
 
+    // No query, no filters, no page: show a random landing shelf instead of
+    // the same default list every visit (see utils/search-shelves).
+    // The schema defaults `page` to 1, so ignore it unless it's in the URL.
+    const isLanding =
+        parsedQuery.success &&
+        !searchParams.has("page") &&
+        Object.keys(searchConfig).every((key) => key === "page");
+    const shelf = useLandingShelf();
+    const activeShelf = isLanding ? shelf : null;
+    const isWaitingForShelf = isLanding && !shelf;
+
     // Data fetching
     const { data, isLoading, isError, error, refetch, isFetching } = useSearch(
-        searchConfig,
+        activeShelf?.search ?? searchConfig,
         350,
-        { enabled: parsedQuery.success },
+        { enabled: parsedQuery.success && !isWaitingForShelf },
     );
+    const showSkeleton = isLoading || isWaitingForShelf;
 
     // Navigation helpers
     const navigateSearch = useCallback(
@@ -191,6 +210,28 @@ export function SearchContent() {
         [navigateSearch],
     );
 
+    // "Hide completed": signed-in users only. The bookmark map is fetched
+    // only while the switch is on; filtering happens here on the client, so
+    // /search and /api/anime stay CDN-cached. "Show" reveals them for this
+    // exact search only (a new query or page hides them again).
+    const { data: session } = useSession();
+    const isSignedIn = !!session?.user;
+    const [hideCompleted, setHideCompleted] = useHideCompleted();
+    const isHiding = isSignedIn && hideCompleted;
+    const { data: statuses } = useBookmarkStatuses({ enabled: isHiding });
+    const searchKey = activeShelf ? `shelf:${activeShelf.id}` : searchParams.toString();
+    const [revealedFor, setRevealedFor] = useState<string | null>(null);
+
+    const { visibleAnime, hiddenAnime } = useMemo(() => {
+        const all = data?.data ?? [];
+        if (!isHiding || !statuses || revealedFor === searchKey) {
+            return { visibleAnime: all, hiddenAnime: [] };
+        }
+        const hidden = all.filter((a) => statuses[a.id] === "completed");
+        if (hidden.length === 0) return { visibleAnime: all, hiddenAnime: [] };
+        return { visibleAnime: all.filter((a) => statuses[a.id] !== "completed"), hiddenAnime: hidden };
+    }, [data, isHiding, statuses, revealedFor, searchKey]);
+
     // Derived display values
     const totalPages = data ? Math.max(1, Math.ceil(data.total / (data.limit || 25))) : 1;
 
@@ -216,7 +257,7 @@ export function SearchContent() {
                     </p>
                 </div>
                 <AiFinderNote query={searchParams.get("q") ?? ""} />
-                <SearchBar />
+                <SearchBar onActivate={closeFilters} isSearching={isFetching} />
             </div>
 
             {/* Top-Level Filter Panel (batch / staged filtering) */}
@@ -258,27 +299,79 @@ export function SearchContent() {
             <main className="search-results-area">
                 {/* Status Bar */}
                 <div className="search-results-bar">
-                    <span className="search-results-count">
-                        {isInvalidSearch ? (
-                            <span style={{ color: "var(--accent-readable)" }}>{validationError}</span>
-                        ) : isError ? (
-                            <span style={{ color: "var(--accent-readable)" }}>Unable to load anime catalog</span>
-                        ) : statusText ? (
-                            statusText
-                        ) : data && data.total > 0 ? (
-                            <>
-                                Found <strong>{data.total.toLocaleString()}</strong> anime
-                                {totalPages > 1 && (
-                                    <span style={{ opacity: 0.7, marginLeft: "6px" }}>
-                                        · Page {data.page} of {totalPages}
-                                    </span>
-                                )}
-                            </>
-                        ) : (
-                            "No results"
+                    {activeShelf ? (
+                        <div className="search-shelf-head">
+                            <h2 className="search-shelf-title">{activeShelf.title}</h2>
+                            <p className="search-shelf-sub">{activeShelf.subtitle}</p>
+                        </div>
+                    ) : (
+                        <span className="search-results-count">
+                            {isInvalidSearch ? (
+                                <span style={{ color: "var(--accent-readable)" }}>{validationError}</span>
+                            ) : isError ? (
+                                <span style={{ color: "var(--accent-readable)" }}>Unable to load anime catalog</span>
+                            ) : statusText ? (
+                                statusText
+                            ) : data && data.total > 0 ? (
+                                <>
+                                    Found <strong>{data.total.toLocaleString()}</strong> anime
+                                    {totalPages > 1 && (
+                                        <span style={{ opacity: 0.7, marginLeft: "6px" }}>
+                                            · Page {data.page} of {totalPages}
+                                        </span>
+                                    )}
+                                </>
+                            ) : (
+                                "No results"
+                            )}
+                        </span>
+                    )}
+                    <div className="search-results-actions">
+                        {activeShelf && (
+                            <button type="button" className="search-shuffle-btn" onClick={shuffleShelf}>
+                                <Shuffle size={14} aria-hidden="true" />
+                                Shuffle
+                            </button>
                         )}
-                    </span>
+                        {isSignedIn && (
+                            <label className="search-hide-toggle">
+                                <input
+                                    type="checkbox"
+                                    role="switch"
+                                    checked={hideCompleted}
+                                    onChange={(e) => setHideCompleted(e.target.checked)}
+                                    className="search-hide-toggle-input"
+                                />
+                                <span className="search-hide-toggle-track" aria-hidden="true" />
+                                Hide completed
+                            </label>
+                        )}
+                    </div>
                 </div>
+
+                {hiddenAnime.length > 0 && (
+                    <p className="search-hidden-note" role="status">
+                        <EyeOff size={15} aria-hidden="true" className="search-hidden-note-icon" />
+                        <span>
+                            {hiddenAnime.length === 1 ? (
+                                <>
+                                    <strong>{hiddenAnime[0].title}</strong> is in your Completed list.
+                                </>
+                            ) : (
+                                <>
+                                    {hiddenAnime.length} results are in your Completed list.
+                                </>
+                            )}
+                        </span>
+                        <button
+                            type="button"
+                            className="search-hidden-note-btn"
+                            onClick={() => setRevealedFor(searchKey)}
+                        >
+                            {hiddenAnime.length === 1 ? "Show it" : "Show them"}
+                        </button>
+                    </p>
+                )}
 
                 {/* Content */}
                 {isInvalidSearch ? (
@@ -310,9 +403,27 @@ export function SearchContent() {
                     />
                 ) : (
                     <>
-                        <AnimeGrid isLoading={isLoading} anime={data?.data ?? []} />
+                        {/* Whole page hidden: the note above says why, so no empty grid. */}
+                        {(showSkeleton || visibleAnime.length > 0) && (
+                            <AnimeGrid isLoading={showSkeleton} anime={visibleAnime} eagerCount={5} />
+                        )}
 
-                        {data && data.data.length > 0 && (
+                        {activeShelf && data && data.data.length > 0 ? (
+                            // No pagination on a shelf: "See all" turns it into a normal
+                            // search (filters in the URL, with pagination). History API,
+                            // like every other control here, so no navigation request.
+                            <button
+                                type="button"
+                                className="search-shelf-more"
+                                onClick={() => {
+                                    setSearchUrl(new URLSearchParams(activeShelf.query), "push");
+                                    window.scrollTo({ top: 0, behavior: "smooth" });
+                                }}
+                            >
+                                See all: {activeShelf.title}
+                                <ArrowRight size={15} aria-hidden="true" />
+                            </button>
+                        ) : data && data.data.length > 0 && (
                             <Pagination
                                 currentPage={data.page}
                                 totalPages={totalPages}

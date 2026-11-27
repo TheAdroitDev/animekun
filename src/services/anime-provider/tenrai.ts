@@ -8,6 +8,7 @@ import type { AnimeProvider } from "./provider";
 import type {
     Anime,
     AnimeDetail,
+    AnimeQuizEntry,
     Character,
     PaginatedResponse,
     SearchParams,
@@ -376,6 +377,45 @@ export class TenraiProvider implements AnimeProvider {
             throw this.normalizeError(
                 error,
                 "Failed to fetch popular anime",
+            );
+        }
+    }
+
+    // Quiz source (no MemoryCache: the quiz pool caches the whole result
+    // in Next's data cache, which survives between function instances)
+
+    async getPopularForQuiz(
+        page: number,
+    ): Promise<AnimeQuizEntry[]> {
+        try {
+            const response =
+                await this.client.get<TenraiAnimeListResponse>(
+                    "/top/anime",
+                    {
+                        params: {
+                            filter: "bypopularity",
+                            page,
+                            limit: 25,
+                            sfw: true,
+                        },
+                    },
+                );
+
+            return response.data.data.map((item) => ({
+                ...this.mapAnime(item),
+                synopsis: item.synopsis ?? null,
+                allTitles: [
+                    item.title,
+                    item.title_english,
+                    item.title_japanese,
+                    ...(item.titles?.map((t) => t.title) ?? []),
+                ].filter((t): t is string => Boolean(t)),
+                popularity: item.popularity ?? null,
+            }));
+        } catch (error) {
+            throw this.normalizeError(
+                error,
+                `Failed to fetch popular anime page ${page}`,
             );
         }
     }

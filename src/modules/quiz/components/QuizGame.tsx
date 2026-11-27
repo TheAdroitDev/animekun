@@ -1,11 +1,25 @@
 "use client";
 
-import { useReducer, useState } from "react";
-import { BookOpen, Image as ImageIcon, Loader2, Play } from "lucide-react";
+import { useCallback, useEffect, useReducer, useState } from "react";
+import { BookOpen, Image as ImageIcon, Loader2, Play, RotateCcw } from "lucide-react";
 
-import { DIFFICULTIES, POINTS_PER_CORRECT, QUIZ_MODES, TIME_LIMIT_SECONDS } from "../constants";
-import { QuizApiError, startQuizRequest } from "../queries/quiz-api";
-import type { Difficulty, QuizMode, QuizQuestion, StartQuizResult } from "../types";
+import {
+    DIFFICULTIES,
+    POINTS_PER_CORRECT,
+    QUIZ_MODES,
+    REVEAL_SECONDS,
+    TIME_LIMIT_SECONDS,
+} from "../constants";
+import { answerQuizRequest, QuizApiError, startQuizRequest } from "../queries/quiz-api";
+import type {
+    AnswerResult,
+    Difficulty,
+    QuizMode,
+    QuizQuestion,
+    QuizResults,
+    StartQuizResult,
+} from "../types";
+import { QuizCard } from "./QuizCard";
 
 const MODE_INFO: Record<QuizMode, { label: string; description: string; icon: typeof BookOpen }> = {
     synopsis: { label: "Synopsis", description: "Read the plot, name the anime.", icon: BookOpen },
@@ -18,36 +32,82 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
     hard: "Hard",
 };
 
-// ── Game flow (state machine): idle → starting → playing → results ──
-// 9.4 builds idle/starting; the question card (9.5) and results (9.8)
-// fill in playing and results.
+// ── Game flow (state machine) ──
+// idle → starting → playing → checking → revealed → playing … → finished
+// The server holds the answers and the clock; this only mirrors it.
+
+interface Round {
+    sessionId: string;
+    total: number;
+    question: QuizQuestion;
+    score: number;
+    streak: number;
+}
 
 type GameState =
     | { phase: "idle"; error: string | null }
     | { phase: "starting" }
-    | { phase: "playing"; sessionId: string; total: number; question: QuizQuestion };
+    | ({ phase: "playing"; error: string | null } & Round)
+    | ({ phase: "checking"; selectedId: string | null } & Round)
+    | ({ phase: "revealed"; selectedId: string | null; result: AnswerResult } & Round)
+    | { phase: "finished"; results: QuizResults };
 
 type GameAction =
     | { type: "start" }
     | { type: "started"; game: StartQuizResult }
-    | { type: "failed"; message: string };
+    | { type: "answer"; optionId: string | null }
+    | { type: "answered"; result: AnswerResult }
+    | { type: "answerFailed"; message: string }
+    | { type: "next" }
+    | { type: "exit"; error: string | null };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
     switch (action.type) {
         case "start":
             return state.phase === "idle" ? { phase: "starting" } : state;
         case "started":
-            return state.phase === "starting"
-                ? {
-                      phase: "playing",
-                      sessionId: action.game.sessionId,
-                      total: action.game.total,
-                      question: action.game.question,
-                  }
-                : state;
-        case "failed":
-            return { phase: "idle", error: action.message };
+            if (state.phase !== "starting") return state;
+            return {
+                phase: "playing",
+                error: null,
+                sessionId: action.game.sessionId,
+                total: action.game.total,
+                question: action.game.question,
+                score: 0,
+                streak: 0,
+            };
+        case "answer":
+            if (state.phase !== "playing") return state; // one answer per question
+            return { ...roundOf(state), phase: "checking", selectedId: action.optionId };
+        case "answered":
+            if (state.phase !== "checking") return state;
+            return { ...state, phase: "revealed", result: action.result };
+        case "answerFailed":
+            if (state.phase !== "checking") return state;
+            return { ...roundOf(state), phase: "playing", error: action.message };
+        case "next": {
+            if (state.phase !== "revealed") return state;
+            const { result } = state;
+            if (!result.next) {
+                return result.results ? { phase: "finished", results: result.results } : state;
+            }
+            return {
+                ...roundOf(state),
+                phase: "playing",
+                error: null,
+                question: result.next,
+                score: result.score,
+                streak: result.streak,
+            };
+        }
+        case "exit":
+            return { phase: "idle", error: action.error };
     }
+}
+
+function roundOf(state: Round): Round {
+    const { sessionId, total, question, score, streak } = state;
+    return { sessionId, total, question, score, streak };
 }
 
 interface QuizGameProps {
@@ -70,27 +130,81 @@ export function QuizGame({ initialRemaining, dailyLimit }: QuizGameProps) {
             dispatch({ type: "started", game });
         } catch (error) {
             if (error instanceof QuizApiError && error.status === 429) setRemaining(0);
-            dispatch({
-                type: "failed",
-                message: error instanceof Error ? error.message : "Something went wrong. Please try again.",
-            });
+            dispatch({ type: "exit", error: errorMessage(error) });
         }
     };
 
-    if (state.phase === "playing") {
-        // Placeholder until the question card (9.5).
-        const { question, total } = state;
+    const sessionId = state.phase === "playing" ? state.sessionId : null;
+    const questionIndex = state.phase === "playing" ? state.question.index : null;
+
+    const handleAnswer = useCallback(
+        async (optionId: string | null) => {
+            if (sessionId === null || questionIndex === null) return;
+            dispatch({ type: "answer", optionId });
+            try {
+                const result = await answerQuizRequest(sessionId, questionIndex, optionId);
+                dispatch({ type: "answered", result });
+            } catch (error) {
+                if (error instanceof QuizApiError && error.status === 409) {
+                    // Already answered (e.g. the reply got lost) or the game ended.
+                    dispatch({ type: "exit", error: "This game has ended. Start a new one." });
+                    return;
+                }
+                dispatch({
+                    type: "answerFailed",
+                    message: "Couldn't send your answer. Pick again.",
+                });
+            }
+        },
+        [sessionId, questionIndex],
+    );
+
+    // After the reveal, move on by itself: the server starts the next
+    // question's clock REVEAL_SECONDS after the answer. "Next" skips ahead.
+    const autoAdvance = state.phase === "revealed" && state.result.next !== null;
+    useEffect(() => {
+        if (!autoAdvance) return;
+        const id = window.setTimeout(() => dispatch({ type: "next" }), REVEAL_SECONDS * 1000);
+        return () => window.clearTimeout(id);
+    }, [autoAdvance]);
+
+    if (state.phase === "playing" || state.phase === "checking" || state.phase === "revealed") {
         return (
-            <section className="quiz-play-card" aria-live="polite">
-                <p className="quiz-play-progress">
-                    Question {question.index + 1} of {total}
+            <QuizCard
+                key={state.question.index}
+                question={state.question}
+                total={state.total}
+                score={state.score}
+                streak={state.streak}
+                status={state.phase}
+                selectedId={state.phase === "playing" ? null : state.selectedId}
+                result={state.phase === "revealed" ? state.result : null}
+                error={state.phase === "playing" ? state.error : null}
+                onAnswer={handleAnswer}
+                onNext={() => dispatch({ type: "next" })}
+                onQuit={() => dispatch({ type: "exit", error: null })}
+            />
+        );
+    }
+
+    if (state.phase === "finished") {
+        // Minimal end screen; the full results screen is step 9.8.
+        const { results } = state;
+        return (
+            <section className="quiz-play-card quiz-results" aria-live="polite">
+                <p className="quiz-results-score">{results.score} pts</p>
+                <p className="quiz-results-line">
+                    {results.correctCount} of {results.total} correct · best streak {results.bestStreak} ·{" "}
+                    {Math.round(results.durationMs / 1000)}s
                 </p>
-                {question.mode === "synopsis" ? (
-                    <p className="quiz-play-synopsis">{question.prompt}</p>
-                ) : (
-                    // eslint-disable-next-line @next/next/no-img-element -- MAL CDN poster, never through /_next/image
-                    <img className="quiz-play-poster" src={question.prompt} alt="Poster of the anime to guess" />
-                )}
+                <button
+                    type="button"
+                    className="quiz-play-start quiz-results-again"
+                    onClick={() => dispatch({ type: "exit", error: null })}
+                >
+                    <RotateCcw size={16} aria-hidden="true" />
+                    <span>Play again</span>
+                </button>
             </section>
         );
     }
@@ -176,4 +290,8 @@ export function QuizGame({ initialRemaining, dailyLimit }: QuizGameProps) {
             )}
         </section>
     );
+}
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : "Something went wrong. Please try again.";
 }

@@ -6731,6 +6731,58 @@ input[type="search"]::-webkit-search-results-decoration {
   cursor: not-allowed;
 }
 
+/* Auth — note for apps' built-in browsers (Google blocks sign-in there) */
+.auth-inapp-note {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.auth-inapp-text {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.auth-inapp-text strong {
+  color: var(--text-primary);
+}
+
+.auth-inapp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.auth-inapp-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.auth-inapp-btn:hover {
+  border-color: var(--border-hover);
+}
+
 /* Auth — immersive variant: full-height section, decorative layer behind
    a frosted-glass card (login page dome) */
 .auth-section--immersive {

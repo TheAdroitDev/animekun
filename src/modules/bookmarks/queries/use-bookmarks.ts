@@ -55,14 +55,16 @@ function unwrap<T>(result: ActionResult<T>): T {
  * Note: a disabled query stays "pending" in TanStack v5. Use `isLoading`
  * (pending AND fetching) for spinners, not `isPending`.
  */
-export function useBookmarkStatuses() {
+export function useBookmarkStatuses({ enabled = true }: { enabled?: boolean } = {}) {
     const { data: session } = useSession();
     const userId = session?.user.id;
 
     return useQuery({
         queryKey: bookmarksKey(userId),
         queryFn: fetchStatusMap,
-        enabled: !!userId,
+        // `enabled: false` lets a page skip the request until it needs the
+        // map (e.g. /search only while "Hide completed" is on).
+        enabled: !!userId && enabled,
         staleTime: Infinity,
         refetchOnWindowFocus: false,
     });

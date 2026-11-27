@@ -47,3 +47,8 @@ export const QUIZ_DAILY_LIMITS = {
     perUser: 20,
     global: 2000,
 } as const;
+
+// Lifelines (9.7): each usable once per game, checked on the server.
+// fifty = remove 2 wrong options, hint = genres and year, skip = move on
+// with 0 points but keep the streak.
+export const LIFELINES = ["fifty", "hint", "skip"] as const;

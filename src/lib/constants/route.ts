@@ -17,6 +17,7 @@ export const ROUTES = {
     BOOKMARKS: "/bookmarks",
     PROFILE: "/profile",
     QUIZ: "/quiz",
+    QUIZ_LEADERBOARD: "/quiz/leaderboard",
     CHAT: "/chat",
     GENERATE: "/generate",
   },

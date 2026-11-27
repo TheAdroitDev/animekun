@@ -12,6 +12,7 @@ import {
 import type {
     AnswerResult,
     Difficulty,
+    LifelineResult,
     QuizMode,
     QuizOption,
     QuizQuestion,
@@ -59,6 +60,7 @@ export async function startQuiz(
 
 type AnswerRow = {
     correct: boolean;
+    skipped: boolean;
     in_time: boolean;
     correct_id: string;
     score: number;
@@ -69,7 +71,7 @@ type AnswerRow = {
     total: number;
     mode: QuizMode;
     time_limit_seconds: number;
-    next_question: Omit<StoredQuestion, "animeId"> | null;
+    next_question: Pick<StoredQuestion, "prompt" | "options"> | null;
     finished: boolean;
     duration_ms: number | null;
 };
@@ -79,14 +81,20 @@ type AnswerRow = {
  * server-side time limit, updates score and streak, moves to the next
  * question (restarting its clock) and closes the game after the last one.
  *
+ * `skip` (lifeline, 9.7): no points, the streak is kept, once per game.
+ * A skip sent after the time limit counts as a normal timeout and doesn't
+ * use the lifeline.
+ *
  * Returns null when nothing matched: not this user's game, already
- * finished, or that question was already answered (double tap, replay).
+ * finished, that question was already answered (double tap, replay), or
+ * Skip was already used.
  */
 export async function answerQuestion(
     userId: string,
     sessionId: string,
     index: number,
     optionId: string | null,
+    skip = false,
 ): Promise<AnswerResult | null> {
     const result = await db.execute<AnswerRow>(sql`
         WITH cur AS (
@@ -103,19 +111,28 @@ export async function answerQuestion(
               AND user_id = ${userId}::uuid
               AND current_index = ${index}::int
               AND finished_at IS NULL
+              AND NOT (${skip}::boolean AND 'skip' = ANY(lifelines_used))
         ),
         judged AS (
-            SELECT cur.*, (COALESCE(cur.correct_id = ${optionId}::text, false) AND cur.in_time) AS ok
+            SELECT
+                cur.*,
+                (NOT ${skip}::boolean AND COALESCE(cur.correct_id = ${optionId}::text, false) AND cur.in_time) AS ok,
+                (${skip}::boolean AND cur.in_time) AS skipped
             FROM cur
         )
         UPDATE quiz_sessions AS s SET
             answers = s.answers || jsonb_build_array(
-                jsonb_build_object('optionId', ${optionId}::text, 'correct', j.ok, 'ms', j.ms)
+                jsonb_build_object('optionId', ${optionId}::text, 'correct', j.ok, 'ms', j.ms, 'skipped', j.skipped)
             ),
             score = s.score + CASE WHEN j.ok THEN s.points_per_correct ELSE 0 END,
             correct_count = s.correct_count + j.ok::int,
-            streak = CASE WHEN j.ok THEN s.streak + 1 ELSE 0 END,
+            -- A skip keeps the streak; a wrong answer or timeout resets it.
+            streak = CASE WHEN j.ok THEN s.streak + 1 WHEN j.skipped THEN s.streak ELSE 0 END,
             best_streak = GREATEST(s.best_streak, CASE WHEN j.ok THEN s.streak + 1 ELSE 0 END),
+            lifelines_used = CASE
+                WHEN j.skipped THEN array_append(s.lifelines_used, 'skip')
+                ELSE s.lifelines_used
+            END,
             current_index = s.current_index + 1,
             -- The next question appears after the reveal: start its clock then.
             question_served_at = now() + make_interval(secs => ${REVEAL_SECONDS}::int),
@@ -126,6 +143,7 @@ export async function answerQuestion(
           AND s.finished_at IS NULL
         RETURNING
             j.ok AS correct,
+            j.skipped,
             j.in_time,
             j.correct_id,
             s.score,
@@ -136,7 +154,11 @@ export async function answerQuestion(
             j.total,
             s.mode,
             s.time_limit_seconds,
-            (s.questions -> s.current_index) - 'animeId' AS next_question,
+            -- Only what the browser may see (no answer, no lifeline data).
+            jsonb_build_object(
+                'prompt', s.questions -> s.current_index -> 'prompt',
+                'options', s.questions -> s.current_index -> 'options'
+            ) AS next_question,
             s.finished_at IS NOT NULL AS finished,
             floor(extract(epoch FROM s.finished_at - s.started_at) * 1000)::int AS duration_ms
     `);
@@ -151,7 +173,8 @@ export async function answerQuestion(
 
     return {
         correct: row.correct,
-        timedOut: optionId === null || !row.in_time,
+        timedOut: !row.in_time || (optionId === null && !skip),
+        skipped: row.skipped,
         correctId: row.correct_id,
         score: row.score,
         streak: row.streak,
@@ -166,6 +189,42 @@ export async function answerQuestion(
               }
             : null,
     };
+}
+
+type LifelineRow = { remove_ids: string[]; hint: string };
+
+/**
+ * Uses the 50/50 or Hint lifeline on the current question (9.7), in one
+ * UPDATE: marks it used and returns only that question's lifeline data
+ * (prepared when the game was created). Returns null when nothing matched:
+ * not this user's game, finished, not on that question, already used, or a
+ * game created before lifelines existed (no data stored).
+ */
+export async function applyLifeline(
+    userId: string,
+    sessionId: string,
+    index: number,
+    type: "fifty" | "hint",
+): Promise<LifelineResult | null> {
+    const result = await db.execute<LifelineRow>(sql`
+        UPDATE quiz_sessions
+        SET lifelines_used = array_append(lifelines_used, ${type}::text)
+        WHERE id = ${sessionId}::uuid
+          AND user_id = ${userId}::uuid
+          AND current_index = ${index}::int
+          AND finished_at IS NULL
+          AND NOT (${type}::text = ANY(lifelines_used))
+          AND (questions -> current_index) ? 'hint'
+        RETURNING
+            questions -> current_index -> 'removeIds' AS remove_ids,
+            questions -> current_index ->> 'hint' AS hint
+    `);
+
+    const row = result.rows[0];
+    if (!row) return null;
+    return type === "fifty"
+        ? { type, removedIds: row.remove_ids }
+        : { type, hint: row.hint };
 }
 
 /** What the browser may see: everything except the answer. */

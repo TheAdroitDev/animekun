@@ -2,7 +2,7 @@
 
 import type { ApiResponseType } from "@/types/api";
 
-import type { AnswerResult, Difficulty, QuizMode, StartQuizResult } from "../types";
+import type { AnswerResult, Difficulty, LifelineResult, QuizMode, StartQuizResult } from "../types";
 
 /** A failed quiz request, with the server's message and HTTP status (0 = offline). */
 export class QuizApiError extends Error {
@@ -40,11 +40,21 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 /**
- * POST /api/quiz/answer. optionId null = time ran out. Safe to resend: the
- * server only accepts the first answer to each question (409 after that).
+ * POST /api/quiz/answer. optionId null = time ran out (or a skip). Safe to
+ * resend: the server only accepts the first answer to each question.
  */
-export function answerQuizRequest(sessionId: string, index: number, optionId: string | null) {
-    return postJson<AnswerResult>("/api/quiz/answer", { sessionId, index, optionId });
+export function answerQuizRequest(
+    sessionId: string,
+    index: number,
+    optionId: string | null,
+    skip = false,
+) {
+    return postJson<AnswerResult>("/api/quiz/answer", { sessionId, index, optionId, skip });
+}
+
+/** POST /api/quiz/lifeline: 50/50 or Hint for the current question (9.7). */
+export function lifelineRequest(sessionId: string, index: number, type: "fifty" | "hint") {
+    return postJson<LifelineResult>("/api/quiz/lifeline", { sessionId, index, type });
 }
 
 /** POST /api/quiz/start: creates a game and returns its first question. */

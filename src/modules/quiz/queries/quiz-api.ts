@@ -2,7 +2,7 @@
 
 import type { ApiResponseType } from "@/types/api";
 
-import type { Difficulty, QuizMode, StartQuizResult } from "../types";
+import type { AnswerResult, Difficulty, QuizMode, StartQuizResult } from "../types";
 
 /** A failed quiz request, with the server's message and HTTP status (0 = offline). */
 export class QuizApiError extends Error {
@@ -37,6 +37,14 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
         throw new QuizApiError(res.status, message);
     }
     return json.data;
+}
+
+/**
+ * POST /api/quiz/answer. optionId null = time ran out. Safe to resend: the
+ * server only accepts the first answer to each question (409 after that).
+ */
+export function answerQuizRequest(sessionId: string, index: number, optionId: string | null) {
+    return postJson<AnswerResult>("/api/quiz/answer", { sessionId, index, optionId });
 }
 
 /** POST /api/quiz/start: creates a game and returns its first question. */

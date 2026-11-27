@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Clock, Flame, Loader2, RotateCcw, Settings2, SkipForward, X } from "lucide-react";
+import { Check, Clock, Flame, Loader2, RotateCcw, Settings2, SkipForward, Trophy, X } from "lucide-react";
 
 import { Confetti, CONFETTI_MS } from "@/components/effects/Confetti";
 import { ROUTES } from "@/lib/constants/route";
@@ -104,6 +104,10 @@ export function QuizResults({
                     <Settings2 size={16} aria-hidden="true" />
                     <span>Change mode</span>
                 </button>
+                <Link href={ROUTES.DASHBOARD.QUIZ_LEADERBOARD} prefetch={false} className="quiz-results-secondary">
+                    <Trophy size={16} aria-hidden="true" />
+                    <span>View leaderboard</span>
+                </Link>
                 <span className={`quiz-play-remaining${outOfGames ? " quiz-play-remaining--empty" : ""}`}>
                     {outOfGames
                         ? "No quizzes left today · resets at 00:00 UTC"

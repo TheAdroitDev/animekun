@@ -14,8 +14,8 @@ function noStore(res: Response): Response {
 }
 
 /**
- * POST /api/quiz/answer  { sessionId, index, optionId | null }
- *   → { correct, timedOut, correctId, score, streak, next, results }
+ * POST /api/quiz/answer  { sessionId, index, optionId | null, skip? }
+ *   → { correct, timedOut, skipped, correctId, score, streak, next, results }
  *
  * The answer is checked on the server (one UPDATE, see quiz-service.ts);
  * the browser never had the correct option before this. optionId null
@@ -43,10 +43,10 @@ export async function POST(request: NextRequest) {
         return noStore(ApiResponse.badRequest("Invalid answer."));
     }
 
-    const { sessionId, index, optionId } = parsed.data;
+    const { sessionId, index, optionId, skip } = parsed.data;
 
     try {
-        const result = await answerQuestion(session.user.id, sessionId, index, optionId);
+        const result = await answerQuestion(session.user.id, sessionId, index, optionId, skip);
         if (!result) {
             return noStore(
                 ApiResponse.conflict("This question was already answered or the game is over."),

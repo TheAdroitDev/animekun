@@ -54,6 +54,11 @@ export const quizSessions = pgTable(
         correctCount: integer("correct_count").notNull().default(0),
         streak: integer("streak").notNull().default(0),
         bestStreak: integer("best_streak").notNull().default(0),
+        // Lifelines used in this game ("fifty", "hint", "skip"): each once.
+        lifelinesUsed: text("lifelines_used")
+            .array()
+            .notNull()
+            .default(sql`'{}'::text[]`),
         startedAt: timestamp("started_at", {
             withTimezone: true,
         })

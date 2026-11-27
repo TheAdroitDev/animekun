@@ -1,5 +1,5 @@
 import type {
-    Anime, AnimeDetail, Character, PaginatedResponse, SearchParams,
+    Anime, AnimeDetail, AnimeQuizEntry, Character, PaginatedResponse, SearchParams,
 } from "./types";
 
 // heart of the architecture 
@@ -9,6 +9,12 @@ export interface AnimeProvider {
     getTrending(): Promise<Anime[]>;
 
     getPopular(): Promise<Anime[]>;
+
+    // One page (25) of the most popular anime, with synopsis and all
+    // titles. Quiz source material; cached by the caller, not here.
+    getPopularForQuiz(
+        page: number,
+    ): Promise<AnimeQuizEntry[]>;
 
     getSeasonal(
         season: string,

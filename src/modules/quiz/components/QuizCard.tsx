@@ -97,7 +97,8 @@ export function QuizCard({
 
             <QuizTimer
                 seconds={question.timeLimitSeconds}
-                paused={!isPlaying}
+                // Also paused while 50/50 or Hint loads (the server adds that time back).
+                paused={!isPlaying || lifelinePending !== null}
                 onExpire={() => onAnswer(null)}
             />
 
@@ -125,7 +126,7 @@ export function QuizCard({
                 <div className="quiz-card-poster-frame">
                     {/* eslint-disable-next-line @next/next/no-img-element -- MAL CDN poster, never through /_next/image */}
                     <img
-                        className={`quiz-card-poster${isRevealed ? " quiz-card-poster--revealed" : ""}${isPlaying ? "" : " quiz-card-poster--paused"}`}
+                        className={`quiz-card-poster${isRevealed ? " quiz-card-poster--revealed" : ""}${isPlaying && lifelinePending === null ? "" : " quiz-card-poster--paused"}`}
                         style={{ "--quiz-time": `${question.timeLimitSeconds}s` } as React.CSSProperties}
                         src={question.prompt}
                         alt={isRevealed ? `Poster of ${correctTitle}` : "Blurred poster of the anime to guess"}

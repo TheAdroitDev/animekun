@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { ArrowRight, Flame, X } from "lucide-react";
+import { ArrowRight, Flame, Lightbulb, X } from "lucide-react";
 
 import { TITLE_MASK } from "../constants";
-import type { AnswerResult, QuizQuestion } from "../types";
+import type { AnswerResult, Lifeline, QuizQuestion } from "../types";
+import { QuizLifelines } from "./QuizLifelines";
 import { QuizTimer } from "./QuizTimer";
 
 export type CardStatus = "playing" | "checking" | "revealed";
@@ -19,8 +20,14 @@ interface QuizCardProps {
     selectedId: string | null;
     result: AnswerResult | null;
     error: string | null;
+    /** Lifelines (9.7): used this game, the one loading, and this question's effects. */
+    lifelinesUsed: Lifeline[];
+    lifelinePending: Lifeline | null;
+    removedIds: string[];
+    hint: string | null;
     /** null = time ran out. */
     onAnswer: (optionId: string | null) => void;
+    onLifeline: (lifeline: Lifeline) => void;
     onNext: () => void;
     onQuit: () => void;
 }
@@ -41,7 +48,12 @@ export function QuizCard({
     selectedId,
     result,
     error,
+    lifelinesUsed,
+    lifelinePending,
+    removedIds,
+    hint,
     onAnswer,
+    onLifeline,
     onNext,
     onQuit,
 }: QuizCardProps) {
@@ -49,17 +61,17 @@ export function QuizCard({
     const isRevealed = status === "revealed" && result !== null;
     const isLast = isRevealed && result.next === null;
 
-    // Keys 1–4 pick an answer while the question is open.
+    // Keys 1–4 pick an answer while the question is open (not removed ones).
     useEffect(() => {
         if (!isPlaying) return;
         const onKey = (event: KeyboardEvent) => {
             if (event.ctrlKey || event.metaKey || event.altKey) return;
             const option = question.options[Number(event.key) - 1];
-            if (option) onAnswer(option.id);
+            if (option && !removedIds.includes(option.id)) onAnswer(option.id);
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [isPlaying, question.options, onAnswer]);
+    }, [isPlaying, question.options, removedIds, onAnswer]);
 
     const correctTitle = isRevealed
         ? question.options.find((o) => o.id === result.correctId)?.title
@@ -89,6 +101,13 @@ export function QuizCard({
                 onExpire={() => onAnswer(null)}
             />
 
+            <QuizLifelines
+                used={lifelinesUsed}
+                pending={lifelinePending}
+                enabled={isPlaying}
+                onUse={onLifeline}
+            />
+
             {question.mode === "synopsis" ? (
                 <p className="quiz-card-synopsis">
                     {question.prompt.split(TITLE_MASK).map((part, i) => (
@@ -114,8 +133,16 @@ export function QuizCard({
                 </div>
             )}
 
+            {hint && (
+                <p className="quiz-card-hint">
+                    <Lightbulb size={14} aria-hidden="true" />
+                    <span>{hint}</span>
+                </p>
+            )}
+
             <div className="quiz-card-options" role="group" aria-label="Answers">
                 {question.options.map((option, i) => {
+                    const removed = removedIds.includes(option.id);
                     let state = "";
                     if (isRevealed) {
                         if (option.id === result.correctId) state = " quiz-card-option--correct";
@@ -123,6 +150,8 @@ export function QuizCard({
                         else state = " quiz-card-option--dim";
                     } else if (option.id === selectedId) {
                         state = " quiz-card-option--selected";
+                    } else if (removed) {
+                        state = " quiz-card-option--removed";
                     }
                     return (
                         <button
@@ -130,7 +159,8 @@ export function QuizCard({
                             type="button"
                             className={`quiz-card-option${state}`}
                             onClick={() => onAnswer(option.id)}
-                            disabled={!isPlaying}
+                            disabled={!isPlaying || removed}
+                            aria-label={removed ? `${option.title} (removed by 50/50)` : undefined}
                         >
                             <span className="quiz-card-letter" aria-hidden="true">
                                 {LETTERS[i]}
@@ -149,7 +179,7 @@ export function QuizCard({
                                 <>Correct! +{result.score - score}</>
                             ) : (
                                 <>
-                                    {result.timedOut ? "Time's up" : "Not quite"}: it was{" "}
+                                    {result.skipped ? "Skipped" : result.timedOut ? "Time's up" : "Not quite"}: it was{" "}
                                     <strong>{correctTitle}</strong>
                                 </>
                             )}

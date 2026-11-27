@@ -32,6 +32,14 @@ export const POINTS_PER_CORRECT = {
 // counts as too late.
 export const ANSWER_SLACK_SECONDS = 2;
 
+// After an answer, the right option is shown this long before the next
+// question appears. The server starts the next question's clock this much
+// later, so reading the answer never costs time ("Next" skips it early).
+export const REVEAL_SECONDS = 2;
+
+// Replaces titles in synopses (server) and is drawn as a "hidden" pill (UI).
+export const TITLE_MASK = "▢▢▢";
+
 // Games a user can start per UTC day (ai_usage counter, like AI Finder).
 // The global cap only guards against abuse; normal use never reaches it.
 export const QUIZ_ENDPOINT = "quiz";

@@ -3,7 +3,12 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { quizSessions } from "@/db/schema";
 
-import { ANSWER_SLACK_SECONDS, POINTS_PER_CORRECT, TIME_LIMIT_SECONDS } from "../constants";
+import {
+    ANSWER_SLACK_SECONDS,
+    POINTS_PER_CORRECT,
+    REVEAL_SECONDS,
+    TIME_LIMIT_SECONDS,
+} from "../constants";
 import type {
     AnswerResult,
     Difficulty,
@@ -90,7 +95,8 @@ export async function answerQuestion(
                 questions -> current_index ->> 'animeId' AS correct_id,
                 now() - question_served_at
                     <= make_interval(secs => time_limit_seconds + ${ANSWER_SLACK_SECONDS}::int) AS in_time,
-                LEAST(floor(extract(epoch FROM now() - question_served_at) * 1000), 2147483647)::int AS ms,
+                -- Negative when "Next" skipped the reveal early: count it as 0.
+                GREATEST(0, LEAST(floor(extract(epoch FROM now() - question_served_at) * 1000), 2147483647))::int AS ms,
                 jsonb_array_length(questions) AS total
             FROM quiz_sessions
             WHERE id = ${sessionId}::uuid
@@ -111,7 +117,8 @@ export async function answerQuestion(
             streak = CASE WHEN j.ok THEN s.streak + 1 ELSE 0 END,
             best_streak = GREATEST(s.best_streak, CASE WHEN j.ok THEN s.streak + 1 ELSE 0 END),
             current_index = s.current_index + 1,
-            question_served_at = now(),
+            -- The next question appears after the reveal: start its clock then.
+            question_served_at = now() + make_interval(secs => ${REVEAL_SECONDS}::int),
             finished_at = CASE WHEN s.current_index + 1 >= j.total THEN now() ELSE NULL END
         FROM judged AS j
         WHERE s.id = j.id

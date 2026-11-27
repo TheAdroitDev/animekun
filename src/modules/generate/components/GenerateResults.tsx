@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { signalFeedbackMoment } from "@/components/feedback";
+
 import type { ResolvedRecommendation } from "../types";
 import { ResultCard } from "./ResultCard";
 
@@ -17,6 +19,13 @@ interface GenerateResultsProps {
  * after another.
  */
 export function GenerateResults({ isPending, results, errorMessage }: GenerateResultsProps) {
+    // Fresh results are a good moment to ask for feedback (the card waits a
+    // few seconds and shows at most once per visit; see FeedbackPrompt).
+    const hasResults = !isPending && !errorMessage && (results?.length ?? 0) > 0;
+    useEffect(() => {
+        if (hasResults) signalFeedbackMoment();
+    }, [hasResults, results]);
+
     return (
         <div aria-live="polite">
             {isPending ? (

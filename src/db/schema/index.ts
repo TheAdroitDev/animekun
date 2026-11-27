@@ -2,13 +2,13 @@ import { relations } from "drizzle-orm";
 
 import { accounts, aiUsage, sessions, userPreferences, userRoleEnum, userTierEnum, users, verifications, } from "./users";
 import { bookmarkStatusEnum, bookmarks, } from "./bookmarks";
-import { achievements, quizScores, } from "./quiz";
+import { achievements, quizSessions, } from "./quiz";
 import { chatMessages, notifications, } from "./chat";
 import { feedback } from "./feedback";
 
 // Enums must be exported here too: drizzle-kit only sees what this file
 // exports, and would otherwise try to DROP enums that exist in the database.
-export { userRoleEnum, userTierEnum, bookmarkStatusEnum, users, accounts, sessions, verifications, userPreferences, bookmarks, quizScores, achievements, chatMessages, notifications, aiUsage, feedback }
+export { userRoleEnum, userTierEnum, bookmarkStatusEnum, users, accounts, sessions, verifications, userPreferences, bookmarks, quizSessions, achievements, chatMessages, notifications, aiUsage, feedback }
 
 
 export const usersRelations = relations(users, ({ many, one }) => ({
@@ -16,7 +16,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
     sessions: many(sessions),
     preferences: one(userPreferences),
     bookmarks: many(bookmarks),
-    quizScores: many(quizScores),
+    quizSessions: many(quizSessions),
     achievements: many(achievements),
     sentMessages: many(chatMessages, { // important distinction in foreign keys
         relationName: "sender",
@@ -65,12 +65,12 @@ export const bookmarksRelations = relations(
     }),
 );
 
-// A quiz score belongs to one user:
-export const quizScoresRelations = relations(
-    quizScores,
+// A quiz game belongs to one user:
+export const quizSessionsRelations = relations(
+    quizSessions,
     ({ one }) => ({
         user: one(users, {
-            fields: [quizScores.userId],
+            fields: [quizSessions.userId],
             references: [users.id],
         }),
     }),

@@ -108,3 +108,13 @@ export interface QuizReviewItem {
     skipped: boolean;
     timedOut: boolean;
 }
+
+/** A player's own numbers on the leaderboard page (9.9). */
+export interface UserQuizStats {
+    games: number;
+    total: number;
+    weekTotal: number;
+    accuracy: number;
+    bestStreak: number;
+    bestGame: { score: number; mode: QuizMode; difficulty: Difficulty } | null;
+}

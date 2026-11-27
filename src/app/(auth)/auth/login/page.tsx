@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { AuthCard } from "@/modules/auth/components/AuthCard";
 import { GoogleSignInButton } from "@/modules/auth/components/GoogleSignInButton";
+import { InAppBrowserNote } from "@/modules/auth/components/InAppBrowserNote";
 import { LoginBackdrop } from "@/modules/auth/components/LoginBackdrop";
 import { OAuthErrorMessage } from "@/modules/auth/components/OAuthErrorMessage";
 import { getLoginPosters } from "@/modules/auth/utils/login-posters";
@@ -30,6 +31,7 @@ export default async function LoginPage() {
             subtitle="Explore thousands of anime. Sign in with Google to save bookmarks, take quizzes and get recommendations."
         >
             <OAuthErrorMessage />
+            <InAppBrowserNote />
             <GoogleSignInButton />
         </AuthCard>
     );

@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { animeProvider } from "@/services/anime-provider";
 import type { AnimeQuizEntry } from "@/services/anime-provider/types";
 
+import { TITLE_MASK } from "../constants";
 import type { PoolAnime } from "../types";
 
 /**
@@ -19,7 +20,7 @@ const POOL_PAGES = 4; // 4 × 25 = the top 100 by popularity
 const MIN_POOL_SIZE = 40;
 const MIN_SYNOPSIS_LENGTH = 120;
 const MAX_SYNOPSIS_LENGTH = 500;
-const MASK = "▢▢▢";
+const MASK = TITLE_MASK;
 
 /**
  * Builds the pool from Tenrai. Pages are fetched one after another (not in

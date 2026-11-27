@@ -7,6 +7,9 @@ interface AnimeGridProps {
     isLoading?: boolean;
     error?: Error | null;
     skeletonCount?: number;
+    /** How many leading cards load eagerly (the first row, when the grid is
+     *  at the top of the page). 0 elsewhere, e.g. grids below the home hero. */
+    eagerCount?: number;
 }
 
 export function AnimeGrid({
@@ -14,6 +17,7 @@ export function AnimeGrid({
     isLoading,
     error,
     skeletonCount = 12,
+    eagerCount = 0,
 }: AnimeGridProps) {
     if (error) {
         return (
@@ -30,8 +34,8 @@ export function AnimeGrid({
                     <AnimeCardSkeleton key={i} />
                 ))}
 
-            {anime?.map((item) => (
-                <AnimeCard key={item.id} anime={item} />
+            {anime?.map((item, i) => (
+                <AnimeCard key={item.id} anime={item} eager={i < eagerCount} />
             ))}
         </div>
     );

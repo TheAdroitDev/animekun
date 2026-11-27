@@ -22,6 +22,14 @@ export interface AnimeDetail extends Anime {
   relations: Anime[];
 }
 
+// A list entry plus the text the quiz needs: the synopsis and every known
+// title (default, English, Japanese, synonyms) so they can be masked.
+export interface AnimeQuizEntry extends Anime {
+  synopsis: string | null;
+  allTitles: string[];
+  popularity: number | null;
+}
+
 export interface Character {
   id: string;
   name: string;

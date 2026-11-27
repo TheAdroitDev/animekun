@@ -205,7 +205,8 @@ export default function QuizSection() {
                             ))}
                         </div>
 
-                        <Link href={ROUTES.DASHBOARD.QUIZ} className="quiz-launch-cta">
+                        {/* No prefetch: /quiz is dynamic (session check). */}
+                        <Link href={ROUTES.DASHBOARD.QUIZ} className="quiz-launch-cta" prefetch={false}>
                             <span>Start Full Quiz Session</span>
                             <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={2} />
                         </Link>

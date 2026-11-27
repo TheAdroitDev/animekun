@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { PartyPopper } from "lucide-react";
 
+import { Confetti } from "@/components/effects/Confetti";
 import { trackEvent } from "@/components/analytics/TracwellAnalytics";
 import { useSession } from "@/lib/auth-client";
 
@@ -16,33 +17,7 @@ import { useSession } from "@/lib/auth-client";
 
 type Kind = "new" | "back";
 
-const COLORS = ["#e63b2e", "#f59e0b", "#22c55e", "#3b82f6", "#ec4899"];
 const DURATION_MS = 4000;
-
-// Deterministic "random" (render must stay pure, so no Math.random)
-const rand = (i: number, n: number) => {
-    const x = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
-    return x - Math.floor(x);
-};
-
-const makeParticles = (count: number, petalsOnly: boolean) =>
-    Array.from({ length: count }, (_, i) => ({
-        petal: petalsOnly || i % 3 === 0,
-        style: {
-            "--x": `${rand(i, 1) * 100}%`,
-            "--dx": `${(rand(i, 2) - 0.5) * 160}px`,
-            "--spin": `${360 + rand(i, 3) * 540}deg`,
-            "--s": `${7 + rand(i, 4) * 7}px`,
-            "--c": COLORS[i % COLORS.length],
-            animationDelay: `${rand(i, 5) * 0.9}s`,
-            animationDuration: `${2.4 + rand(i, 6) * 1.4}s`,
-        } as CSSProperties,
-    }));
-
-const PARTICLES: Record<Kind, ReturnType<typeof makeParticles>> = {
-    new: makeParticles(40, false),
-    back: makeParticles(16, true),
-};
 
 // Read the flag once per page load (the OAuth return is a full page load)
 let initialFlag: string | null | undefined;
@@ -74,11 +49,7 @@ export function WelcomeCelebration() {
 
     return (
         <>
-            <div className="welcome-fx" aria-hidden="true">
-                {PARTICLES[kind].map((p, i) => (
-                    <span key={i} className={p.petal ? "welcome-particle welcome-particle--petal" : "welcome-particle"} style={p.style} />
-                ))}
-            </div>
+            <Confetti variant={kind === "new" ? "full" : "petals"} />
             <div className="welcome-toast" role="status">
                 {kind === "new" ? (
                     <>

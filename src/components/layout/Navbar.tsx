@@ -30,11 +30,13 @@ function ThemeIcons() {
     );
 }
 
-// Quiz is hidden until its page exists (Phase 9): links to 404s on every
-// page hurt visitors and SEO. Add it back then.
+// Quiz is shown to everyone (unlike Bookmarks): signed-out visitors land on
+// login and come back to /quiz, so it brings sign-ups. prefetch={false}:
+// /quiz is dynamic, prefetching it would run a function on every page view.
 const navLinks: { label: string; href: string; prefetch?: false }[] = [
     { label: "World", href: ROUTES.HOME },
     { label: "Search", href: ROUTES.SEARCH },
+    { label: "Quiz", href: ROUTES.DASHBOARD.QUIZ, prefetch: false },
     // "/#town-hall" (not "#town-hall") so it also works from other pages
     { label: "Town Hall", href: "/#town-hall" },
 ];

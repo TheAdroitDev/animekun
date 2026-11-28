@@ -7,6 +7,7 @@ import {
     Quiz01Icon,
     SparklesIcon,
 } from "@hugeicons/core-free-icons";
+import { ROUTES } from "@/lib/constants/route";
 import HeroMarquee from "./HeroMarquee";
 
 export default function Hero() {
@@ -40,7 +41,7 @@ export default function Hero() {
                         <HugeiconsIcon icon={AiMagicIcon} size={16} strokeWidth={2} />
                         <span>Search Anime</span>
                     </Link>
-                    <Link href="#quiz" className="btn-secondary">
+                    <Link href={ROUTES.DASHBOARD.QUIZ} className="btn-secondary" prefetch={false}>
                         <HugeiconsIcon icon={Quiz01Icon} size={16} strokeWidth={1.8} />
                         <span>Test Your Otaku</span>
                     </Link>

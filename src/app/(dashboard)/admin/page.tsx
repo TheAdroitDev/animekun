@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { count, countDistinct, desc, gt, sql } from "drizzle-orm";
+import { count, countDistinct, desc, gt, isNotNull, sql } from "drizzle-orm";
 import {
     Activity,
     ArrowUpRight,
     BarChart3,
     Bookmark,
     Database,
+    Gamepad2,
     LineChart,
     MessageSquareText,
     Triangle,
@@ -17,7 +18,7 @@ import {
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { bookmarks, feedback, sessions, users } from "@/db/schema";
+import { bookmarks, feedback, quizSessions, sessions, users } from "@/db/schema";
 import { getEnv } from "@/lib/config/env";
 import { BOOKMARK_STATUSES, BOOKMARK_STATUS_LABELS } from "@/modules/bookmarks/types";
 import { GENERATE_DAILY_LIMITS, GENERATE_ENDPOINT } from "@/modules/generate/constants";
@@ -102,6 +103,7 @@ async function getAdminStats() {
         [feedbackTotal],
         latest,
         aiUsage,
+        [quizPlayers],
     ] = await Promise.all([
         db.select({ n: count() }).from(users),
         db.select({ n: count() }).from(users).where(gt(users.createdAt, weekAgo)),
@@ -121,6 +123,11 @@ async function getAdminStats() {
             .orderBy(desc(users.createdAt))
             .limit(6),
         getAiUsage(),
+        // People who finished at least one quiz (a finished game is a saved score).
+        db
+            .select({ n: countDistinct(quizSessions.userId), games: count() })
+            .from(quizSessions)
+            .where(isNotNull(quizSessions.finishedAt)),
     ]);
 
     // Every column, in board order, even when it has no bookmarks yet.
@@ -135,6 +142,12 @@ async function getAdminStats() {
             { label: "Signed in", value: signedIn.n, hint: "Active sessions", icon: Users },
             { label: "Bookmarks", value: bookmarkTotal.n, hint: `+${bookmarksThisWeek.n} this week`, icon: Bookmark },
             { label: "Feedback", value: feedbackTotal.n, hint: "Widget responses", icon: MessageSquareText },
+            {
+                label: "Quiz players",
+                value: quizPlayers.n,
+                hint: `${quizPlayers.games.toLocaleString("en-US")} games finished`,
+                icon: Gamepad2,
+            },
         ],
         bookmarkStatuses: BOOKMARK_STATUSES.map((status) => ({
             status,
